@@ -1,5 +1,10 @@
 # DukeEatz
+    
 
 ### Project Members: Abhinav Meduri, Arnav Meduri, Neha Jatla, Shravan Selvavel
 
-Keeping Up With Food at Duke
+COMPSCI 316: Intro to Databases
+#### Open Project Option
+
+_________________________________________    
+Description: Keeping Up With Food at Duke
