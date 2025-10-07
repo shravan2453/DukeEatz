@@ -21,11 +21,11 @@ Everyone:
     
 Abhinav Meduri: 
 
-    - Website Navigation Flow Chart
+    - Website Navigation Flow Chart + Features
 
 Arnav Meduri:
 
-    - Website Navigation Flow Chart
+    - Website Navigation Flow Chart + Features
 
 Kashish Maheshwari: 
 
