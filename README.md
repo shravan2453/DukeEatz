@@ -9,6 +9,8 @@ COMPSCI 316: Intro to Databases
 _________________________________________    
 Description: Keeping Up With Food at Duke
 
+Link: https://github.com/shravan2453/DukeEatz
+
 ### Milestone 2:
 
 Everyone: 
