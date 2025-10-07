@@ -38,3 +38,4 @@ Neha Jatla:
 Shravan Selvavel: 
 
     - Working on Grading Criteria (Basic + Additional Features)
+    - Database Design
