@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DukeEatz - User Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ DukeEatz User Dashboard</h1>
+            <p>Two API Calls - One Unified Interface</p>
+        </div>
+
+        <!-- API Status Indicators -->
+        <div class="api-status">
+            <div class="status-indicator status-active" id="api1Status">
+                ✅ API 1: User Profile - Ready
+            </div>
+            <div class="status-indicator status-active" id="api2Status">
+                ✅ API 2: User Favorites - Ready
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <!-- API 1: User Profile Section (Friend's Work) -->
+            <div class="section">
+                <h2>👤 User Profile Information</h2>
+                <div id="profileSection">
+                    <div class="loading" id="profileLoading">
+                        Loading user profile information...
+                    </div>
+                    <div id="profileContent" class="hidden">
+                        <div class="profile-info" id="profileInfo">
+                            <!-- Profile data will be inserted here -->
+                        </div>
+                    </div>
+                    <div id="profileError" class="error hidden"></div>
+                </div>
+            </div>
+
+            <!-- API 2: User Favorites Section (Your Work) -->
+            <div class="section">
+                <h2>❤️ Favorite Restaurants</h2>
+                <div id="favoritesSection">
+                    <div class="favorites-controls">
+                        <button class="btn" onclick="loadFavorites()" id="loadFavoritesBtn">
+                            Load My Favorite Restaurants
+                        </button>
+                    </div>
+                    
+                    <div class="loading hidden" id="favoritesLoading">
+                        Loading your favorite restaurants...
+                    </div>
+                    
+                    <div id="favoritesContent" class="hidden">
+                        <div class="favorites-list" id="favoritesList">
+                            <!-- Favorites data will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <div id="favoritesEmpty" class="loading hidden">
+                        No favorite restaurants found. Start exploring DukeEatz!
+                    </div>
+                    
+                    <div id="favoritesError" class="error hidden"></div>
+                    
+                    <div id="favoritesSuccess" class="success hidden">
+                        <strong id="favoritesCount">0</strong> favorite restaurants loaded successfully!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Combined Data Summary -->
+        <div class="section">
+            <h2>📊 User Summary</h2>
+            <div id="summarySection">
+                <div class="profile-info">
+                    <div class="info-item">
+                        <span class="info-label">User Profile Status:</span>
+                        <span id="profileStatus">Not loaded</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Favorite Restaurants Count:</span>
+                        <span id="favoritesSummary">Not loaded</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Last Updated:</span>
+                        <span id="lastUpdated">Never</span>
+                    </div>
+                </div>
+                <button class="btn" onclick="loadAllData()" style="margin-top: 15px;">
+                    🔄 Refresh All Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const USER_ID = 1; // Test user ID
+        let profileData = null;
+        let favoritesData = null;
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DukeEatz Dashboard Initialized");
+            console.log("API 1: User Profile Endpoint - /api/user/" + USER_ID);
+            console.log("API 2: User Favorites Endpoint - /api/user/" + USER_ID + "/favorites");
+            
+            // Load user profile automatically
+            loadUserProfile();
+        });
+
+        // ============================================================================
+        // API 1: USER PROFILE ENDPOINT (Friend's Responsibility)
+        // ============================================================================
+        
+        async function loadUserProfile() {
+            try {
+                showElement('profileLoading');
+                hideElement('profileContent');
+                hideElement('profileError');
+                
+                console.log("🔄 Calling API 1: User Profile...");
+                const response = await fetch(`http://localhost:5000/api/user/${USER_ID}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    profileData = result.data;
+                    displayUserProfile(profileData);
+                    updateSummary();
+                    console.log("✅ API 1 Success: User profile loaded");
+                } else {
+                    throw new Error(result.error || 'Failed to load user profile');
+                }
+                
+            } catch (error) {
+                console.error("❌ API 1 Error:", error);
+                showError('profileError', `Failed to load user profile: ${error.message}`);
+                document.getElementById('profileStatus').textContent = 'Error loading';
+                document.getElementById('api1Status').className = 'status-indicator status-inactive';
+                document.getElementById('api1Status').textContent = '❌ API 1: User Profile - Error';
+            }
+        }
+
+        function displayUserProfile(user) {
+            const profileInfo = document.getElementById('profileInfo');
+            
+            profileInfo.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">User ID:</span>
+                    <span class="info-value">#${user.user_id}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Full Name:</span>
+                    <span class="info-value">${user.name}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Username:</span>
+                    <span class="info-value">@${user.username}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">${user.email}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Account Type:</span>
+                    <span class="info-value">${user.is_admin ? 'Administrator' : 'Standard User'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Member Since:</span>
+                    <span class="info-value">${new Date(user.registration_date).toLocaleDateString()}</span>
+                </div>
+            `;
+            
+            hideElement('profileLoading');
+            showElement('profileContent');
+            document.getElementById('profileStatus').textContent = 'Loaded successfully';
+        }
+
+        // ============================================================================
+        // API 2: USER FAVORITES ENDPOINT (Your Responsibility)
+        // ============================================================================
+        
+        async function loadFavorites() {
+            try {
+                disableButton('loadFavoritesBtn', true);
+                showElement('favoritesLoading');
+                hideElement('favoritesContent');
+                hideElement('favoritesEmpty');
+                hideElement('favoritesError');
+                hideElement('favoritesSuccess');
+                
+                console.log("🔄 Calling API 2: User Favorites...");
+                const response = await fetch(`http://localhost:5000/api/user/${USER_ID}/favorites`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    favoritesData = result.data.favorites;
+                    displayFavorites(favoritesData);
+                    updateSummary();
+                    console.log("✅ API 2 Success: Favorites loaded");
+                } else {
+                    throw new Error(result.error || 'Failed to load favorites');
+                }
+                
+            } catch (error) {
+                console.error("❌ API 2 Error:", error);
+                showError('favoritesError', `Failed to load favorites: ${error.message}`);
+                document.getElementById('favoritesSummary').textContent = 'Error loading';
+                document.getElementById('api2Status').className = 'status-indicator status-inactive';
+                document.getElementById('api2Status').textContent = '❌ API 2: User Favorites - Error';
+            } finally {
+                disableButton('loadFavoritesBtn', false);
+            }
+        }
+
+        function displayFavorites(favorites) {
+            const favoritesList = document.getElementById('favoritesList');
+            
+            if (favorites.length === 0) {
+                hideElement('favoritesLoading');
+                showElement('favoritesEmpty');
+                return;
+            }
+            
+            let favoritesHTML = '';
+            
+            favorites.forEach(vendor => {
+                const favDate = vendor.favorited_date ? 
+                    new Date(vendor.favorited_date).toLocaleDateString() : 'Recently';
+                
+                favoritesHTML += `
+                    <div class="vendor-card">
+                        <div class="vendor-name">${vendor.name}</div>
+                        <div class="vendor-detail">
+                            <strong>📍 Location:</strong> ${vendor.location_category} - ${vendor.address}
+                        </div>
+                        <div class="vendor-detail">
+                            <strong>🍽️ Cuisine:</strong> ${vendor.cuisine_type || 'Various'}
+                        </div>
+                        <div class="vendor-detail">
+                            <strong>🕒 Hours:</strong> ${vendor.operating_hours || 'Check vendor'}
+                        </div>
+                        <div class="vendor-detail">
+                            <strong>📞 Contact:</strong> ${vendor.contact_info || 'Not specified'}
+                        </div>
+                        <div class="favorite-date">Favorited on: ${favDate}</div>
+                    </div>
+                `;
+            });
+            
+            favoritesList.innerHTML = favoritesHTML;
+            
+            hideElement('favoritesLoading');
+            showElement('favoritesContent');
+            showElement('favoritesSuccess');
+            
+            document.getElementById('favoritesCount').textContent = favorites.length;
+            document.getElementById('favoritesSummary').textContent = `${favorites.length} restaurants`;
+        }
+
+        // ============================================================================
+        // UTILITY FUNCTIONS (Shared)
+        // ============================================================================
+        
+        function loadAllData() {
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+            loadUserProfile();
+            loadFavorites();
+        }
+
+        function updateSummary() {
+            if (profileData) {
+                document.getElementById('profileStatus').textContent = 'Loaded';
+            }
+            if (favoritesData) {
+                document.getElementById('favoritesSummary').textContent = 
+                    `${favoritesData.length} favorite restaurants`;
+            }
+        }
+
+        function showElement(elementId) {
+            document.getElementById(elementId).classList.remove('hidden');
+        }
+
+        function hideElement(elementId) {
+            document.getElementById(elementId).classList.add('hidden');
+        }
+
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.classList.remove('hidden');
+        }
+
+        function disableButton(buttonId, disabled) {
+            const button = document.getElementById(buttonId);
+            button.disabled = disabled;
+            button.textContent = disabled ? 'Loading...' : 'Load My Favorite Restaurants';
+        }
+    </script>
+</body>
+</html>
