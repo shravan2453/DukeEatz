@@ -1,0 +1,252 @@
+/* Duke University Color Theme */
+:root {
+  --duke-blue: #001A57;
+  --duke-navy: #012169;
+  --duke-royal-blue: #003366;
+  --duke-light-blue: #339898;
+  --duke-gray: #666666;
+  --duke-light-gray: #E5E5E5;
+}
+
+/* Reviews Container */
+.reviews-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.reviews-header {
+  border-bottom: 3px solid var(--duke-blue);
+  padding-bottom: 15px;
+}
+
+.reviews-header h3 {
+  color: var(--duke-blue);
+  font-weight: 700;
+  margin: 0;
+}
+
+.rating-summary {
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+}
+
+.average-rating {
+  display: flex;
+  align-items: center;
+  color: var(--duke-blue);
+}
+
+/* Duke Blue Button */
+.duke-blue-btn {
+  background-color: var(--duke-blue) !important;
+  border-color: var(--duke-blue) !important;
+  color: white !important;
+  font-weight: 600;
+  padding: 10px 24px;
+  transition: all 0.3s ease;
+}
+
+.duke-blue-btn:hover {
+  background-color: var(--duke-navy) !important;
+  border-color: var(--duke-navy) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 26, 87, 0.3);
+}
+
+.duke-blue-btn:disabled {
+  background-color: var(--duke-gray) !important;
+  border-color: var(--duke-gray) !important;
+}
+
+/* Review Item */
+.review-item {
+  border-left: 4px solid var(--duke-blue);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.review-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 26, 87, 0.15);
+  transform: translateX(5px);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--duke-blue), var(--duke-royal-blue));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.review-text {
+  color: var(--duke-gray);
+  line-height: 1.6;
+  margin-top: 10px;
+}
+
+.review-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-actions .btn {
+  white-space: nowrap;
+}
+
+/* Review Form */
+.review-form {
+  border: 2px solid var(--duke-blue);
+  box-shadow: 0 4px 12px rgba(0, 26, 87, 0.1);
+}
+
+.review-form h5 {
+  color: var(--duke-blue);
+  font-weight: 700;
+}
+
+.star-rating-input {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.star-icon {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.star-icon:hover {
+  transform: scale(1.2);
+}
+
+.rating-text {
+  color: var(--duke-blue);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* Form Controls */
+.review-form .form-control:focus {
+  border-color: var(--duke-blue);
+  box-shadow: 0 0 0 0.2rem rgba(0, 26, 87, 0.25);
+}
+
+.review-form .form-label {
+  color: var(--duke-blue);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* Empty State */
+.empty-state {
+  border: 2px dashed var(--duke-light-gray);
+  background-color: #f8f9fa;
+}
+
+.empty-state .card-body {
+  color: var(--duke-gray);
+}
+
+/* Rating Stars */
+.rating {
+  display: flex;
+  align-items: center;
+}
+
+/* Badges */
+.badge {
+  font-weight: 600;
+  padding: 6px 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .reviews-container {
+    padding: 10px;
+  }
+
+  .reviews-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 15px;
+  }
+
+  .duke-blue-btn {
+    width: 100%;
+  }
+
+  .review-item .d-flex {
+    flex-direction: column;
+  }
+
+  .review-actions {
+    flex-direction: row;
+    width: 100%;
+    margin-top: 15px;
+  }
+
+  .review-actions .btn {
+    flex: 1;
+  }
+
+  .star-rating-input {
+    flex-wrap: wrap;
+  }
+}
+
+/* Loading Spinner */
+.spinner-border {
+  color: var(--duke-blue);
+}
+
+/* Alerts */
+.alert-danger {
+  border-left: 4px solid #dc3545;
+}
+
+.alert-success {
+  border-left: 4px solid #28a745;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.review-item,
+.review-form {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Scrollbar Styling */
+.reviews-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.reviews-list::-webkit-scrollbar-track {
+  background: var(--duke-light-gray);
+}
+
+.reviews-list::-webkit-scrollbar-thumb {
+  background: var(--duke-blue);
+  border-radius: 4px;
+}
+
+.reviews-list::-webkit-scrollbar-thumb:hover {
+  background: var(--duke-navy);
+}
