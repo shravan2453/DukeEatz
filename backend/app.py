@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 
 app = Flask(__name__)
+CORS(app)
 
 # Database configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -12,7 +13,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'du
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-CORS(app)
 
 # Database Models
 class User(db.Model):
@@ -50,6 +50,25 @@ class Favorite(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     vendor_id = db.Column(db.Integer, db.ForeignKey('vendors.vendor_id'), nullable=False)
     favorited_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+class MenuItem(db.Model):
+    __tablename__ = 'menu_items'
+    menu_item_id = db.Column(db.Integer, primary_key=True)
+    vendor_id = db.Column(db.Integer, db.ForeignKey('vendors.vendor_id'))
+    name = db.Column(db.String(100))
+    description = db.Column(db.String(255))
+    price = db.Column(db.Float)
+    dietary_tags = db.Column(db.String(200))
+    is_active = db.Column(db.Boolean, default=True)
+
+class Review(db.Model):
+    __tablename__ = 'reviews'
+    review_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    vendor_id = db.Column(db.Integer, db.ForeignKey('vendors.vendor_id'))
+    rating = db.Column(db.Integer)
+    review_text = db.Column(db.String(255))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 # API ENDPOINT 1: Get User Profile (Friend's API)
 @app.route('/api/user/<int:user_id>', methods=['GET'])
