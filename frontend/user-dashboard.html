@@ -124,7 +124,7 @@
                 hideElement('profileError');
                 
                 console.log("🔄 Calling API 1: User Profile...");
-                const response = await fetch(`http://localhost:5000/api/user/${USER_ID}`);
+                const response = await fetch(`http://127.0.0.1:5000/api/user/${USER_ID}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -199,7 +199,7 @@
                 hideElement('favoritesSuccess');
                 
                 console.log("🔄 Calling API 2: User Favorites...");
-                const response = await fetch(`http://localhost:5000/api/user/${USER_ID}/favorites`);
+                const response = await fetch(`http://127.0.0.1:5000/api/user/${USER_ID}/favorites`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

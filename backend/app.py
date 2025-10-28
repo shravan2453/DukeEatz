@@ -5,7 +5,14 @@ from datetime import datetime
 import os
 
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 # Database configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -69,6 +76,12 @@ class Review(db.Model):
     rating = db.Column(db.Integer)
     review_text = db.Column(db.String(255))
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Handle OPTIONS requests for CORS preflight
+@app.route('/api/user/<int:user_id>', methods=['OPTIONS'])
+@app.route('/api/user/<int:user_id>/favorites', methods=['OPTIONS'])
+def handle_options(user_id):
+    return '', 204
 
 # API ENDPOINT 1: Get User Profile (Friend's API)
 @app.route('/api/user/<int:user_id>', methods=['GET'])
