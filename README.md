@@ -11,6 +11,13 @@ Description: Keeping Up With Food at Duke
 
 Link: https://github.com/shravan2453/DukeEatz
 
+Branches:
+
+Landing Page + Vendors: https://github.com/shravan2453/DukeEatz/tree/vendors-initial
+Profile: https://github.com/shravan2453/DukeEatz/tree/user-profile
+Registration: https://github.com/shravan2453/DukeEatz/tree/user-registration
+Reviews: https://github.com/shravan2453/DukeEatz/tree/user-review-section
+
 ### Milestone 2:
 
 Everyone: 
