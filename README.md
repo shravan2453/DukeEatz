@@ -11,6 +11,8 @@ Description: Keeping Up With Food at Duke
 
 Link: https://github.com/shravan2453/DukeEatz
 
+Milestone 3 Video: https://drive.google.com/file/d/1cXng6s47tDdcmgcJGL48DQpvHzEtZzep/view?usp=sharing
+
 Branches:
 
 - Landing Page + Vendors: https://github.com/shravan2453/DukeEatz/tree/vendors-initial
