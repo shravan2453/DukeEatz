@@ -1,30 +1,35 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './LandingPage.css';
 import dukeLogo from '../images/dukelogo.png';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const location = useLocation();
+  const [user, setUser] = useState(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    // TODO: Implement search functionality
-    console.log('Searching for:', searchQuery);
-  };
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
 
   const handleBrowseVendors = () => {
     navigate('/browse-vendors');
   };
 
-  const handleSignIn = () => {
-    // TODO: Navigate to sign in page
-    console.log('Navigate to sign in');
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
+    setShowProfileMenu(false);
+    navigate('/');
   };
 
-  const handleSignUp = () => {
-    // TODO: Navigate to sign up page
-    console.log('Navigate to sign up');
+  const handleProfile = () => {
+    setShowProfileMenu(false);
+    navigate('/profile');
   };
 
   return (
@@ -32,22 +37,68 @@ const LandingPage = () => {
       {/* Header */}
       <header className="header">
         <div className="container">
-          <div className="logo">
+          <div className="logo" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
             <div className="dukeeatz-brand">
               <h1>DukeEatz</h1>
               <p className="tagline">Your Duke Dining Guide</p>
             </div>
           </div>
           <nav className="nav">
-            <button className="nav-btn" onClick={handleBrowseVendors}>
-              Browse Vendors
+            <button 
+              className={`nav-btn ${location.pathname === '/home' ? 'active' : ''}`}
+              onClick={() => navigate('/home')}
+            >
+              HOME
             </button>
-            <button className="nav-btn" onClick={handleSignIn}>
-              Log In
+            <button 
+              className={`nav-btn ${location.pathname === '/browse-vendors' ? 'active' : ''}`}
+              onClick={handleBrowseVendors}
+            >
+              BROWSE VENDORS
             </button>
-            <button className="nav-btn primary" onClick={handleSignUp}>
-              Sign Up
+            <button 
+              className={`nav-btn ${location.pathname === '/browse-menu-items' ? 'active' : ''}`}
+              onClick={() => navigate('/browse-menu-items')}
+            >
+              BROWSE MENU ITEMS
             </button>
+            <button 
+              className={`nav-btn ${location.pathname === '/leave-review' ? 'active' : ''}`}
+              onClick={() => navigate('/leave-review')}
+            >
+              REVIEWS
+            </button>
+            {user ? (
+              <div className="profile-menu-container">
+                <button 
+                  className="profile-btn"
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                >
+                  <span className="profile-icon">👤</span>
+                  <span className="profile-name">{user.name || user.username}</span>
+                  <span className="dropdown-arrow">▼</span>
+                </button>
+                {showProfileMenu && (
+                  <div className="profile-dropdown">
+                    <button className="dropdown-item" onClick={handleProfile}>
+                      My Profile
+                    </button>
+                    <button className="dropdown-item" onClick={handleLogout}>
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <button className="nav-btn" onClick={() => navigate('/')}>
+                  Log In
+                </button>
+                <button className="nav-btn primary" onClick={() => navigate('/')}>
+                  Sign Up
+                </button>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -72,29 +123,10 @@ const LandingPage = () => {
               payment options that work with your Duke ID.
             </p>
             
-            {/* Search Bar */}
-            <form className="search-form" onSubmit={handleSearch}>
-              <div className="search-container">
-                <input
-                  type="text"
-                  placeholder="Search for vendors, cuisines, or menu items..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input"
-                />
-                <button type="submit" className="search-btn">
-                  Search
-                </button>
-              </div>
-            </form>
-
-            {/* Quick Actions */}
-            <div className="quick-actions">
-              <button className="action-btn" onClick={handleBrowseVendors}>
-                Browse All Vendors
-              </button>
-              <button className="action-btn secondary" onClick={handleSignUp}>
-                Create Account
+            {/* Giant Browse Vendors Button */}
+            <div className="browse-vendors-cta">
+              <button className="giant-browse-btn" onClick={handleBrowseVendors}>
+                Browse Vendors
               </button>
             </div>
           </div>
