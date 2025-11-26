@@ -2,6 +2,9 @@
 
 A comprehensive dining guide for Duke University students, featuring vendor information, search functionality, location-based filtering, user reviews, favorites, and menu browsing.
 
+## MILESTONE 4 LINK:
+https://drive.google.com/file/d/1lofItYPxoeNK2xEpWBq4cvABjgA7Fxiq/view?usp=sharing
+
 ## Features
 
 - **Browse Vendors**: View all dining options across Duke's campus with filtering and search
