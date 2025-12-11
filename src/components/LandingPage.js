@@ -1,111 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './LandingPage.css';
 import dukeLogo from '../images/dukelogo.png';
+import Header from './Header';
+import Footer from './Footer';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [user, setUser] = useState(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
 
   const handleBrowseVendors = () => {
     navigate('/browse-vendors');
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    setShowProfileMenu(false);
-    navigate('/');
-  };
-
-  const handleProfile = () => {
-    setShowProfileMenu(false);
-    navigate('/profile');
-  };
-
   return (
     <div className="landing-page">
-      {/* Header */}
-      <header className="header">
-        <div className="container">
-          <div className="logo" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
-            <div className="dukeeatz-brand">
-              <h1>DukeEatz</h1>
-              <p className="tagline">Your Duke Dining Guide</p>
-            </div>
-          </div>
-          <nav className="nav">
-            <button 
-              className={`nav-btn ${location.pathname === '/home' ? 'active' : ''}`}
-              onClick={() => navigate('/home')}
-            >
-              HOME
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-vendors' ? 'active' : ''}`}
-              onClick={handleBrowseVendors}
-            >
-              BROWSE VENDORS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-menu-items' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-menu-items')}
-            >
-              BROWSE MENU ITEMS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/leave-review' ? 'active' : ''}`}
-              onClick={() => navigate('/leave-review')}
-            >
-              REVIEWS
-            </button>
-            {user ? (
-              <div className="profile-menu-container">
-                <button 
-                  className="profile-btn"
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                >
-                  <span className="profile-icon">👤</span>
-                  <span className="profile-name">{user.name || user.username}</span>
-                  <span className="dropdown-arrow">▼</span>
-                </button>
-                {showProfileMenu && (
-                  <div className="profile-dropdown">
-                    <button className="dropdown-item" onClick={handleProfile}>
-                      My Profile
-                    </button>
-                    <button className="dropdown-item" onClick={handleLogout}>
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button className="nav-btn" onClick={() => navigate('/')}>
-                  Log In
-                </button>
-                <button className="nav-btn primary" onClick={() => navigate('/')}>
-                  Sign Up
-                </button>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <section className="hero">
-        <div className="container">
+        <div className="container-why">
           <div className="hero-content">
             <div className="duke-logo-hero">
               <img 
@@ -135,39 +48,54 @@ const LandingPage = () => {
 
       {/* Features Section */}
       <section className="features">
-        <div className="container">
-          <h3 className="features-title">Why Choose DukeEatz?</h3>
+        <div className="container-why">
+          <div className="features-header">
+            <span className="features-badge">Why Us?</span>
+            <h3 className="features-title">Why Choose DukeEatz?</h3>
+            <p className="features-subtitle">Everything you need to navigate Duke dining, all in one place</p>
+          </div>
           <div className="features-grid">
             <div className="feature-card">
-              <div className="feature-icon">🍽️</div>
+              <div className="feature-icon-wrapper">
+                <div className="feature-icon">🍽️</div>
+                <div className="feature-glow"></div>
+              </div>
               <h4>Comprehensive Menus</h4>
               <p>Detailed menus with real-time updates from Duke Dining and local vendors</p>
+              <div className="feature-card-accent"></div>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">⭐</div>
+              <div className="feature-icon-wrapper">
+                <div className="feature-icon">⭐</div>
+                <div className="feature-glow"></div>
+              </div>
               <h4>Student Reviews</h4>
               <p>Read reviews from fellow Duke students who understand your dining needs</p>
+              <div className="feature-card-accent"></div>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">💳</div>
+              <div className="feature-icon-wrapper">
+                <div className="feature-icon">💳</div>
+                <div className="feature-glow"></div>
+              </div>
               <h4>Payment Options</h4>
               <p>Find vendors that accept Food Points, credit cards, and other payment methods</p>
+              <div className="feature-card-accent"></div>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">📍</div>
+              <div className="feature-icon-wrapper">
+                <div className="feature-icon">📍</div>
+                <div className="feature-glow"></div>
+              </div>
               <h4>Campus Focused</h4>
               <p>Curated specifically for Duke's campus and surrounding areas</p>
+              <div className="feature-card-accent"></div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="container">
-          <p>&copy; 2024 DukeEatz. Built for the Duke community.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

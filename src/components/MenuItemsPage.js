@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { formatText } from '../utils/formatText';
 import './MenuItemsPage.css';
+import Header from './Header';
+import Footer from './Footer';
 
 const API_URL = 'http://127.0.0.1:5001';
 
 const MenuItemsPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams();
   const [vendor, setVendor] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
+  const [menuItemsWithReviews, setMenuItemsWithReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterMealType, setFilterMealType] = useState('all');
@@ -39,6 +40,25 @@ const MenuItemsPage = () => {
       if (!response.ok) throw new Error('Failed to fetch menu items');
       const data = await response.json();
       setMenuItems(data);
+      
+      // Fetch reviews for all menu items
+      const reviewsResponse = await fetch(`${API_URL}/api/reviews`);
+      if (reviewsResponse.ok) {
+        const allReviews = await reviewsResponse.json();
+        const itemsWithReviews = data.map(item => {
+          const itemReviews = allReviews.filter(r => r.menu_item_id === item.menu_item_id);
+          return {
+            ...item,
+            reviewCount: itemReviews.length,
+            avgRating: itemReviews.length > 0 
+              ? (itemReviews.reduce((sum, r) => sum + r.rating, 0) / itemReviews.length).toFixed(1)
+              : null
+          };
+        });
+        setMenuItemsWithReviews(itemsWithReviews);
+      } else {
+        setMenuItemsWithReviews(data.map(item => ({ ...item, reviewCount: 0, avgRating: null })));
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -55,24 +75,13 @@ const MenuItemsPage = () => {
     fetchMenuItems();
   }, [id, fetchVendor, fetchMenuItems]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    setShowProfileMenu(false);
-    navigate('/');
-  };
-
-  const handleProfile = () => {
-    setShowProfileMenu(false);
-    navigate('/profile');
-  };
-
   // Get unique categories and meal types for filters
   const categories = ['all', ...new Set(menuItems.map(item => item.category).filter(Boolean))];
   const mealTypes = ['all', ...new Set(menuItems.map(item => item.meal_type).filter(Boolean))];
 
-  // Filter menu items
-  const filteredItems = menuItems.filter(item => {
+  // Filter menu items (use menuItemsWithReviews if available, otherwise menuItems)
+  const itemsToFilter = menuItemsWithReviews.length > 0 ? menuItemsWithReviews : menuItems;
+  const filteredItems = itemsToFilter.filter(item => {
     const matchesSearch = !searchQuery || 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -97,74 +106,7 @@ const MenuItemsPage = () => {
 
   return (
     <div className="menu-items-page">
-      {/* Header - matching LandingPage */}
-      <header className="header">
-        <div className="container">
-          <div className="logo" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
-            <div className="dukeeatz-brand">
-              <h1>DukeEatz</h1>
-              <p className="tagline">Your Duke Dining Guide</p>
-            </div>
-          </div>
-          <nav className="nav">
-            <button 
-              className={`nav-btn ${location.pathname === '/home' ? 'active' : ''}`}
-              onClick={() => navigate('/home')}
-            >
-              HOME
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-vendors' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-vendors')}
-            >
-              BROWSE VENDORS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-menu-items' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-menu-items')}
-            >
-              BROWSE MENU ITEMS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/leave-review' ? 'active' : ''}`}
-              onClick={() => navigate('/leave-review')}
-            >
-              REVIEWS
-            </button>
-            {user ? (
-              <div className="profile-menu-container">
-                <button 
-                  className="profile-btn"
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                >
-                  <span className="profile-icon">👤</span>
-                  <span className="profile-name">{user.name || user.username}</span>
-                  <span className="dropdown-arrow">▼</span>
-                </button>
-                {showProfileMenu && (
-                  <div className="profile-dropdown">
-                    <button className="dropdown-item" onClick={handleProfile}>
-                      My Profile
-                    </button>
-                    <button className="dropdown-item" onClick={handleLogout}>
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button className="nav-btn" onClick={() => navigate('/')}>
-                  Log In
-                </button>
-                <button className="nav-btn primary" onClick={() => navigate('/')}>
-                  Sign Up
-                </button>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <div className="menu-items-content">
         <div className="container">
@@ -218,24 +160,36 @@ const MenuItemsPage = () => {
               <section key={category} className="menu-category-section">
                 <h2 className="category-title">{formatText(category)}</h2>
                 <div className="menu-items-grid">
-                  {items.map((item) => (
-                    <div key={item.menu_item_id} className="menu-item-card">
-                      {item.image_url && (
-                        <img src={item.image_url} alt={item.name} className="menu-item-image" />
-                      )}
+                  {items.map((item, index) => (
+                    <div 
+                      key={item.menu_item_id} 
+                      className="menu-item-card"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <div className="menu-item-image-container">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt={item.name} className="menu-item-image" />
+                        ) : (
+                          <div className="menu-item-image-placeholder">
+                            <span className="menu-item-icon">🍽️</span>
+                          </div>
+                        )}
+                        {item.price && (
+                          <div className="price-badge">
+                            ${item.price.toFixed(2)}
+                          </div>
+                        )}
+                      </div>
                       <div className="menu-item-info">
-                        <h3>{item.name}</h3>
+                        <div className="menu-item-header">
+                          <h3>{item.name}</h3>
+                          {item.meal_type && (
+                            <span className="meal-type-badge">{formatText(item.meal_type)}</span>
+                          )}
+                        </div>
                         {item.description && (
                           <p className="menu-item-description">{item.description}</p>
                         )}
-                        <div className="menu-item-meta">
-                          {item.price && (
-                            <span className="menu-item-price">${item.price.toFixed(2)}</span>
-                          )}
-                          {item.meal_type && (
-                            <span className="menu-item-meal-type">{formatText(item.meal_type)}</span>
-                          )}
-                        </div>
                         {item.dietary_tags && item.dietary_tags.length > 0 && (
                           <div className="menu-item-tags">
                             {item.dietary_tags.map((tag, idx) => (
@@ -245,6 +199,40 @@ const MenuItemsPage = () => {
                             ))}
                           </div>
                         )}
+                        <div className="menu-item-reviews-section">
+                          <div className="reviews-info">
+                            {item.reviewCount > 0 ? (
+                              <div className="reviews-display">
+                                <span className="reviews-count">
+                                  ⭐ {item.avgRating} ({item.reviewCount} {item.reviewCount === 1 ? 'review' : 'reviews'})
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="no-reviews-text">No reviews left</span>
+                            )}
+                          </div>
+                          <button 
+                            className="leave-review-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/leave-review', {
+                                state: {
+                                  vendorId: id,
+                                  menuItemId: item.menu_item_id,
+                                  vendorName: vendor?.name,
+                                  menuItemName: item.name
+                                }
+                              });
+                            }}
+                          >
+                            Leave Review
+                          </button>
+                        </div>
+                        <div className="menu-item-footer">
+                          {item.price && (
+                            <span className="menu-item-price-large">${item.price.toFixed(2)}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -258,6 +246,8 @@ const MenuItemsPage = () => {
           )}
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };

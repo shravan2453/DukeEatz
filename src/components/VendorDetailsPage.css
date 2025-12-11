@@ -7,7 +7,7 @@
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #001A57 0%, #2c5282 100%);
+  background: linear-gradient(135deg, #001A57 0%, #2c5282 50%, #000d2e 100%);
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -328,6 +328,19 @@
   box-shadow: 0 4px 8px rgba(44, 82, 130, 0.3);
 }
 
+.vendor-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.vendor-title-row h1 {
+  margin: 0;
+  flex: 1;
+}
+
 .vendor-header {
   background: white;
   padding: 3rem;
@@ -348,6 +361,27 @@
   color: #001A57;
   margin-bottom: 1.25rem;
   letter-spacing: -0.02em;
+}
+
+.status-tag {
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-open {
+  background-color: #10b981;
+  color: white;
+}
+
+.status-closed {
+  background-color: #ef4444;
+  color: white;
 }
 
 .vendor-meta {
@@ -421,7 +455,7 @@
 }
 
 .view-all-menu-btn {
-  background: linear-gradient(135deg, #001A57 0%, #2c5282 100%);
+  background: linear-gradient(135deg, #001A57 0%, #2c5282 50%, #000d2e 100%);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -438,7 +472,7 @@
 }
 
 .view-all-menu-btn-large {
-  background: linear-gradient(135deg, #001A57 0%, #2c5282 100%);
+  background: linear-gradient(135deg, #001A57 0%, #2c5282 50%, #000d2e 100%);
   color: white;
   border: none;
   padding: 1rem 2rem;
@@ -790,6 +824,33 @@
   margin-left: auto;
 }
 
+/* Review meta info */
+.review-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0.75rem;
+}
+
+.review-meta-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.review-label {
+  font-weight: 700;
+  color: #001A57;
+  font-size: 0.9rem;
+}
+
+.review-value {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 0.9rem;
+}
+
 .review-comment {
   color: #2d3748;
   line-height: 1.6;
@@ -812,7 +873,7 @@
 
 /* Footer Styles - Matching LandingPage */
 .footer {
-  background: linear-gradient(135deg, #001A57 0%, #2c5282 100%);
+  background: linear-gradient(135deg, #001A57 0%, #2c5282 50%, #000d2e 100%);
   color: #ffffff;
   text-align: center;
   padding: 4rem 3rem;

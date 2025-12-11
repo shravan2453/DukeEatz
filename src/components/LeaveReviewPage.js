@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { formatText } from '../utils/formatText';
 import './LeaveReviewPage.css';
+import Header from './Header';
+import Footer from './Footer';
 
 const API_URL = 'http://127.0.0.1:5001';
 
@@ -9,7 +11,6 @@ const LeaveReviewPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [vendors, setVendors] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState('');
   const [menuItems, setMenuItems] = useState([]);
@@ -19,7 +20,6 @@ const LeaveReviewPage = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
-  const [existingReview, setExistingReview] = useState(null);
   const [menuItemReviews, setMenuItemReviews] = useState([]);
   const [selectedMenuItemData, setSelectedMenuItemData] = useState(null);
 
@@ -34,36 +34,6 @@ const LeaveReviewPage = () => {
       console.error('Error fetching vendors:', err);
     }
   }, []);
-
-  const checkExistingReview = useCallback(async () => {
-    if (!selectedVendor || !user) return;
-    try {
-      const userId = user.user_id || user.id;
-      const response = await fetch(`${API_URL}/api/reviews/user/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        // If menu item is selected, check for menu item review, otherwise check vendor review
-        let existing;
-        if (selectedMenuItem) {
-          existing = data.find(r => r.vendor_id === selectedVendor && r.menu_item_id === selectedMenuItem);
-        } else {
-          existing = data.find(r => r.vendor_id === selectedVendor && !r.menu_item_id);
-        }
-        
-        if (existing) {
-          setExistingReview(existing);
-          setRating(existing.rating);
-          setComment(existing.comment || '');
-        } else {
-          setExistingReview(null);
-          setRating(5);
-          setComment('');
-        }
-      }
-    } catch (err) {
-      console.error('Error checking existing review:', err);
-    }
-  }, [selectedVendor, selectedMenuItem, user]);
 
   const fetchMenuItems = useCallback(async () => {
     if (!selectedVendor) return;
@@ -116,11 +86,17 @@ const LeaveReviewPage = () => {
       navigate('/');
     }
     fetchVendors();
-  }, [navigate, fetchVendors]);
+    
+    // Check if vendor and menu item were passed via navigation state
+    if (location.state) {
+      if (location.state.vendorId) {
+        setSelectedVendor(location.state.vendorId);
+      }
+    }
+  }, [navigate, fetchVendors, location]);
 
   useEffect(() => {
     if (selectedVendor && user) {
-      checkExistingReview();
       fetchMenuItems();
     } else {
       setMenuItems([]);
@@ -128,14 +104,17 @@ const LeaveReviewPage = () => {
       setSelectedMenuItemData(null);
       setMenuItemReviews([]);
     }
-  }, [selectedVendor, user, checkExistingReview, fetchMenuItems]);
+  }, [selectedVendor, user, fetchMenuItems]);
 
-  // Re-check existing review when menu item changes
+  // Set menu item after menu items are loaded if passed via state
   useEffect(() => {
-    if (selectedVendor && user) {
-      checkExistingReview();
+    if (location.state?.menuItemId && menuItems.length > 0 && selectedVendor) {
+      const menuItemExists = menuItems.some(item => item.menu_item_id === location.state.menuItemId);
+      if (menuItemExists) {
+        setSelectedMenuItem(location.state.menuItemId);
+      }
     }
-  }, [selectedMenuItem, selectedVendor, user, checkExistingReview]);
+  }, [menuItems, location.state, selectedVendor]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -161,11 +140,10 @@ const LeaveReviewPage = () => {
 
       const data = await response.json();
       if (response.ok) {
-        showMessage(existingReview ? 'Review updated successfully!' : 'Review submitted successfully!', 'success');
-        setExistingReview(data.review);
-        setTimeout(() => {
-          navigate('/browse-vendors');
-        }, 2000);
+        showMessage('Review submitted successfully!', 'success');
+        setRating(5);
+        setComment('');
+        setSelectedMenuItem('');
       } else {
         showMessage(data.error || 'Failed to submit review', 'error');
       }
@@ -185,93 +163,14 @@ const LeaveReviewPage = () => {
     }, 5000);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    setShowProfileMenu(false);
-    navigate('/');
-  };
-
-  const handleProfile = () => {
-    setShowProfileMenu(false);
-    navigate('/profile');
-  };
-
   const selectedVendorData = vendors.find(v => v.id === selectedVendor);
 
   return (
     <div className="leave-review-page">
-      {/* Header - matching LandingPage */}
-      <header className="header">
-        <div className="container">
-          <div className="logo" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
-            <div className="dukeeatz-brand">
-              <h1>DukeEatz</h1>
-              <p className="tagline">Your Duke Dining Guide</p>
-            </div>
-          </div>
-          <nav className="nav">
-            <button 
-              className={`nav-btn ${location.pathname === '/home' ? 'active' : ''}`}
-              onClick={() => navigate('/home')}
-            >
-              HOME
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-vendors' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-vendors')}
-            >
-              BROWSE VENDORS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-menu-items' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-menu-items')}
-            >
-              BROWSE MENU ITEMS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/leave-review' ? 'active' : ''}`}
-            >
-              REVIEWS
-            </button>
-            {user ? (
-              <div className="profile-menu-container">
-                <button 
-                  className="profile-btn"
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                >
-                  <span className="profile-icon">👤</span>
-                  <span className="profile-name">{user.name || user.username}</span>
-                  <span className="dropdown-arrow">▼</span>
-                </button>
-                {showProfileMenu && (
-                  <div className="profile-dropdown">
-                    <button className="dropdown-item" onClick={handleProfile}>
-                      My Profile
-                    </button>
-                    <button className="dropdown-item" onClick={handleLogout}>
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button className="nav-btn" onClick={() => navigate('/')}>
-                  Log In
-                </button>
-                <button className="nav-btn primary" onClick={() => navigate('/')}>
-                  Sign Up
-                </button>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <section className="main-content-section">
-        <div className="container">
           <div className="main-content-wrapper">
             <div className="page-header-section">
               <h2 className="page-title">Leave a Review</h2>
@@ -402,12 +301,6 @@ const LeaveReviewPage = () => {
                 <div className="char-count">{comment.length} characters</div>
               </div>
 
-              {existingReview && (
-                <div className="existing-review-notice">
-                  <p>⚠️ You already have a review for this vendor. Submitting will update your existing review.</p>
-                </div>
-              )}
-
               <div className="form-actions">
                 <button
                   type="button"
@@ -421,20 +314,14 @@ const LeaveReviewPage = () => {
                   className="submit-btn"
                   disabled={loading || !selectedVendor}
                 >
-                  {loading ? 'Submitting...' : existingReview ? 'Update Review' : 'Submit Review'}
+                  {loading ? 'Submitting...' : 'Submit Review'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
       </section>
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="container">
-          <p>&copy; 2024 DukeEatz. Built for the Duke community.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

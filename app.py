@@ -74,7 +74,7 @@ def get_vendors():
     search_query = request.args.get('q')
     sort_by = request.args.get('sort_by', 'name_asc')  # Default to name ascending
     
-    query = Vendor.query.filter_by(is_active=True)  # Only show active vendors
+    query = Vendor.query.filter_by(is_active=True).distinct()  # Only show active vendors, ensure no duplicates
     
     # Filter by cuisine
     if cuisine and cuisine != 'all':
@@ -150,13 +150,30 @@ def get_vendors():
             print(f"Dietary tag filter error: {e}")
             pass  # Invalid dietary tag, ignore filter
     
-    # Search query
+    # Search query with fuzzy matching
     if search_query:
         search_term = f'%{search_query}%'
-        query = query.filter(
-            (Vendor.name.ilike(search_term)) |
-            (Vendor.description.ilike(search_term))
-        )
+        # Try to use PostgreSQL similarity for fuzzy matching if pg_trgm extension is available
+        try:
+            from sqlalchemy import func, or_
+            # Use similarity function for fuzzy matching (requires pg_trgm extension)
+            # Fallback to ilike if similarity is not available
+            similarity_threshold = 0.3  # Adjust threshold as needed (0.0 to 1.0)
+            query = query.filter(
+                or_(
+                    (Vendor.name.ilike(search_term)),
+                    (Vendor.description.ilike(search_term)),
+                    # Try fuzzy matching using similarity (if pg_trgm is enabled)
+                    func.similarity(Vendor.name, search_query) > similarity_threshold,
+                    func.similarity(Vendor.description, search_query) > similarity_threshold
+                )
+            )
+        except Exception:
+            # Fallback to basic ilike if similarity function is not available
+            query = query.filter(
+                (Vendor.name.ilike(search_term)) |
+                (Vendor.description.ilike(search_term))
+            )
     
     # Apply sorting
     if sort_by == 'name_asc':
@@ -175,6 +192,12 @@ def get_vendors():
     
     result = []
     for vendor in vendors:
+        # Calculate average rating for vendor
+        reviews = Review.query.filter_by(vendor_id=vendor.vendor_id).all()
+        if reviews:
+            avg_rating = sum(r.rating for r in reviews) / len(reviews)
+        else:
+            avg_rating = 0.0
         try:
             # Safely get enum values
             location_val = vendor.location_category.value if hasattr(vendor.location_category, 'value') else str(vendor.location_category)
@@ -205,6 +228,7 @@ def get_vendors():
                 'payment_methods': payment_methods_list,
                 'dietary_tags': dietary_tags_list,
                 'operating_hours': vendor.operating_hours if vendor.operating_hours else {},
+                'avg_rating': round(avg_rating, 1),
                 'contact_info': vendor.contact_info if vendor.contact_info else {},
                 'address': vendor.address or '',
                 'building_name': vendor.building_name or '',
@@ -448,23 +472,7 @@ def add_review():
             if not menu_item:
                 return jsonify({'error': 'Menu item not found for this vendor'}), 400
         
-        # Check if user already reviewed this vendor (and optionally this menu item)
-        query = Review.query.filter_by(user_id=user_id, vendor_id=vendor_id)
-        if menu_item_id:
-            query = query.filter_by(menu_item_id=menu_item_id)
-        else:
-            query = query.filter_by(menu_item_id=None)
-        
-        existing_review = query.first()
-        if existing_review:
-            # Update existing review
-            existing_review.rating = rating
-            existing_review.comment = comment
-            existing_review.menu_item_id = menu_item_id
-            db.session.commit()
-            return jsonify({'message': 'Review updated', 'review': existing_review.to_dict()}), 200
-        
-        # Create new review
+        # Always create a new review (allow multiple reviews per vendor/item)
         review = Review(
             user_id=user_id,
             vendor_id=vendor_id,
@@ -536,14 +544,24 @@ def update_review(review_id):
 @app.route('/api/reviews/<review_id>', methods=['DELETE'])
 def delete_review(review_id):
     try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return jsonify({'error': 'user_id is required to delete a review'}), 400
+
         review = Review.query.filter_by(review_id=review_id).first()
         
         if not review:
             return jsonify({'error': 'Review not found'}), 404
+
+        # Only allow deletion if the requesting user owns the review
+        if str(review.user_id) != str(user_id):
+            return jsonify({'error': 'Unauthorized: you can only delete your own reviews'}), 403
         
         db.session.delete(review)
         db.session.commit()
-        return jsonify({'message': 'Review deleted'}), 200
+        return jsonify({'message': 'Review deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
         traceback.print_exc()
@@ -671,11 +689,27 @@ def search_menu_items():
         if not query:
             return jsonify({'error': 'Search query is required'}), 400
         
-        # Build query
-        search_query = MenuItem.query.filter(
-            MenuItem.is_available == True,
-            MenuItem.name.ilike(f'%{query}%')
-        )
+        # Build query with fuzzy matching
+        search_term = f'%{query}%'
+        try:
+            from sqlalchemy import func, or_
+            similarity_threshold = 0.3
+            search_query = MenuItem.query.filter(
+                MenuItem.is_available == True
+            ).filter(
+                or_(
+                    MenuItem.name.ilike(search_term),
+                    MenuItem.description.ilike(search_term),
+                    func.similarity(MenuItem.name, query) > similarity_threshold,
+                    func.similarity(MenuItem.description, query) > similarity_threshold
+                )
+            )
+        except Exception:
+            # Fallback to basic ilike
+            search_query = MenuItem.query.filter(
+                MenuItem.is_available == True,
+                MenuItem.name.ilike(search_term)
+            )
         
         if vendor_id:
             search_query = search_query.filter(MenuItem.vendor_id == vendor_id)
@@ -696,18 +730,57 @@ def get_all_menu_items():
         category = request.args.get('category')
         meal_type = request.args.get('meal_type')
         search_query = request.args.get('q', '')
+        sort_by = request.args.get('sort_by', 'name_asc')  # Default to name ascending
         
         # Build base query
         query = MenuItem.query.filter(MenuItem.is_available == True)
         
         if vendor_id:
             query = query.filter(MenuItem.vendor_id == vendor_id)
-        if category:
+        if category and category != 'all':
             query = query.filter(MenuItem.category == category)
-        if meal_type:
+        if meal_type and meal_type != 'all':
             query = query.filter(MenuItem.meal_type == meal_type)
         if search_query:
-            query = query.filter(MenuItem.name.ilike(f'%{search_query}%'))
+            search_term = f'%{search_query}%'
+            try:
+                from sqlalchemy import func, or_
+                similarity_threshold = 0.3
+                query = query.filter(
+                    or_(
+                        MenuItem.name.ilike(search_term),
+                        MenuItem.description.ilike(search_term),
+                        func.similarity(MenuItem.name, search_query) > similarity_threshold,
+                        func.similarity(MenuItem.description, search_query) > similarity_threshold
+                    )
+                )
+            except Exception:
+                # Fallback to basic ilike
+                query = query.filter(
+                    (MenuItem.name.ilike(search_term)) |
+                    (MenuItem.description.ilike(search_term))
+                )
+        
+        # Apply sorting
+        if sort_by == 'name_asc':
+            query = query.order_by(MenuItem.name.asc())
+        elif sort_by == 'name_desc':
+            query = query.order_by(MenuItem.name.desc())
+        elif sort_by == 'price_asc':
+            query = query.order_by(MenuItem.price.asc().nullslast())
+        elif sort_by == 'price_desc':
+            query = query.order_by(MenuItem.price.desc().nullslast())
+        elif sort_by == 'category_asc':
+            query = query.order_by(MenuItem.category.asc(), MenuItem.name.asc())
+        elif sort_by == 'category_desc':
+            query = query.order_by(MenuItem.category.desc(), MenuItem.name.asc())
+        elif sort_by == 'vendor_asc':
+            query = query.join(Vendor).order_by(Vendor.name.asc(), MenuItem.name.asc())
+        elif sort_by == 'vendor_desc':
+            query = query.join(Vendor).order_by(Vendor.name.desc(), MenuItem.name.asc())
+        else:
+            # Default to name ascending
+            query = query.order_by(MenuItem.name.asc())
         
         menu_items = query.all()
         

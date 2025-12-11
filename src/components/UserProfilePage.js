@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './UserProfilePage.css';
+import Header from './Header';
+import Footer from './Footer';
 
 const API_URL = 'http://127.0.0.1:5001';
 
 const UserProfilePage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', username: '', email: '', password: '' });
   const [updateMessage, setUpdateMessage] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ open: false, reviewId: null });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -54,16 +55,34 @@ const UserProfilePage = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    setShowProfileMenu(false);
-    navigate('/');
+  const confirmDeleteReview = async () => {
+    if (!user || !deleteModal.reviewId) return;
+    try {
+      const response = await fetch(`${API_URL}/api/reviews/${deleteModal.reviewId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.user_id || user.id })
+      });
+
+      if (response.ok) {
+        fetchReviews(user.user_id || user.id);
+        setDeleteModal({ open: false, reviewId: null });
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to delete review');
+      }
+    } catch (err) {
+      console.error('Error deleting review:', err);
+      alert('Error deleting review. Please try again.');
+    }
   };
 
-  const handleProfile = () => {
-    setShowProfileMenu(false);
-    // Already on profile page
+  const openDeleteModal = (reviewId) => {
+    setDeleteModal({ open: true, reviewId });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal({ open: false, reviewId: null });
   };
 
   const handleEditClick = () => {
@@ -127,74 +146,7 @@ const UserProfilePage = () => {
 
   return (
     <div className="user-profile-page">
-      {/* Header - matching LandingPage */}
-      <header className="header">
-        <div className="container">
-          <div className="logo" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
-            <div className="dukeeatz-brand">
-              <h1>DukeEatz</h1>
-              <p className="tagline">Your Duke Dining Guide</p>
-            </div>
-          </div>
-          <nav className="nav">
-            <button 
-              className={`nav-btn ${location.pathname === '/home' ? 'active' : ''}`}
-              onClick={() => navigate('/home')}
-            >
-              HOME
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-vendors' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-vendors')}
-            >
-              BROWSE VENDORS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-menu-items' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-menu-items')}
-            >
-              BROWSE MENU ITEMS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/leave-review' ? 'active' : ''}`}
-              onClick={() => navigate('/leave-review')}
-            >
-              REVIEWS
-            </button>
-            {user ? (
-              <div className="profile-menu-container">
-                <button 
-                  className="profile-btn"
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                >
-                  <span className="profile-icon">👤</span>
-                  <span className="profile-name">{user.name || user.username}</span>
-                  <span className="dropdown-arrow">▼</span>
-                </button>
-                {showProfileMenu && (
-                  <div className="profile-dropdown">
-                    <button className="dropdown-item" onClick={handleProfile}>
-                      My Profile
-                    </button>
-                    <button className="dropdown-item" onClick={handleLogout}>
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button className="nav-btn" onClick={() => navigate('/')}>
-                  Log In
-                </button>
-                <button className="nav-btn primary" onClick={() => navigate('/')}>
-                  Sign Up
-                </button>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <div className="profile-content">
         <div className="container">
@@ -307,6 +259,25 @@ const UserProfilePage = () => {
                           {review.vendor_name}
                         </h3>
                         <span className="review-rating">{'⭐'.repeat(review.rating)}</span>
+                        <button
+                          className="delete-review-btn"
+                          onClick={() => openDeleteModal(review.review_id)}
+                          title="Delete this review"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                      <div className="review-card-meta">
+                        <div className="review-meta-line">
+                          <span className="review-label">Vendor:</span>
+                          <span className="review-value">{review.vendor_name || 'Unknown'}</span>
+                        </div>
+                        <div className="review-meta-line">
+                          <span className="review-label">Item:</span>
+                          <span className="review-value">
+                            {review.menu_item_name ? review.menu_item_name : 'General vendor review'}
+                          </span>
+                        </div>
                       </div>
                       <p className="review-comment">{review.comment}</p>
                       <p className="review-date">{new Date(review.created_at).toLocaleDateString()}</p>
@@ -318,6 +289,21 @@ const UserProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {deleteModal.open && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h3>Delete Review</h3>
+            <p>Are you sure you want to delete this review? This cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="modal-cancel-btn" onClick={closeDeleteModal}>Cancel</button>
+              <button className="modal-delete-btn" onClick={confirmDeleteReview}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Footer />
     </div>
   );
 };

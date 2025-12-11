@@ -7,7 +7,7 @@
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #001A57 0%, #2c5282 100%);
+  background: linear-gradient(135deg, #001A57 0%, #2c5282 50%, #000d2e 100%);
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -709,7 +709,7 @@
 
 /* Footer Styles */
 .footer {
-  background: linear-gradient(135deg, #001A57 0%, #2c5282 100%);
+  background: linear-gradient(135deg, #001A57 0%, #2c5282 50%, #000d2e 100%);
   color: #ffffff;
   text-align: center;
   padding: 4rem 3rem;

@@ -9,6 +9,7 @@ import UserProfilePage from './components/UserProfilePage';
 import LeaveReviewPage from './components/LeaveReviewPage';
 import MenuItemsPage from './components/MenuItemsPage';
 import BrowseMenuItems from './components/BrowseMenuItems';
+import ReviewsPage from './components/ReviewsPage';
 import './App.css';
 
 function App() {
@@ -83,6 +84,14 @@ function App() {
           element={
             <ProtectedRoute>
               <LeaveReviewPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/reviews" 
+          element={
+            <ProtectedRoute>
+              <ReviewsPage />
             </ProtectedRoute>
           } 
         />

@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { formatText } from '../utils/formatText';
 import './VendorReviewsPage.css';
+import Header from './Header';
+import Footer from './Footer';
 
 const API_URL = 'http://127.0.0.1:5001';
 
 const VendorReviewsPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams(); // vendor_id
   const [vendor, setVendor] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -15,7 +16,6 @@ const VendorReviewsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [ratingFilter, setRatingFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,7 +23,6 @@ const VendorReviewsPage = () => {
   const [comment, setComment] = useState('');
   const [menuItems, setMenuItems] = useState([]);
   const [selectedMenuItem, setSelectedMenuItem] = useState('');
-  const [existingReview, setExistingReview] = useState(null);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -67,36 +66,6 @@ const VendorReviewsPage = () => {
     }
   }, [id]);
 
-  const checkExistingReview = useCallback(async () => {
-    if (!id || !user) return;
-    try {
-      const userId = user.user_id || user.id;
-      const response = await fetch(`${API_URL}/api/reviews/user/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        // If menu item is selected, check for menu item review, otherwise check vendor review
-        let existing;
-        if (selectedMenuItem) {
-          existing = data.find(r => r.vendor_id === id && r.menu_item_id === selectedMenuItem);
-        } else {
-          existing = data.find(r => r.vendor_id === id && !r.menu_item_id);
-        }
-        
-        if (existing) {
-          setExistingReview(existing);
-          setRating(existing.rating);
-          setComment(existing.comment || '');
-        } else {
-          setExistingReview(null);
-          setRating(5);
-          setComment('');
-        }
-      }
-    } catch (err) {
-      console.error('Error checking existing review:', err);
-    }
-  }, [id, user, selectedMenuItem]);
-
   const showMessage = (msg, type) => {
     setMessage(msg);
     setMessageType(type);
@@ -116,14 +85,8 @@ const VendorReviewsPage = () => {
     setSubmitting(true);
     try {
       const userId = user.user_id || user.id;
-      const url = existingReview 
-        ? `${API_URL}/api/reviews/${existingReview.review_id}`
-        : `${API_URL}/api/reviews`;
-      
-      const method = existingReview ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method: method,
+      const response = await fetch(`${API_URL}/api/reviews`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: userId,
@@ -136,16 +99,13 @@ const VendorReviewsPage = () => {
 
       const data = await response.json();
       if (response.ok) {
-        showMessage(existingReview ? 'Review updated successfully!' : 'Review submitted successfully!', 'success');
-        setExistingReview(data.review || data);
+        showMessage('Review submitted successfully!', 'success');
         // Refresh reviews list
         await fetchReviews();
-        // Reset form if it was a new review
-        if (!existingReview) {
-          setRating(5);
-          setComment('');
-          setSelectedMenuItem('');
-        }
+        // Reset form
+        setRating(5);
+        setComment('');
+        setSelectedMenuItem('');
       } else {
         showMessage(data.error || 'Failed to submit review', 'error');
       }
@@ -165,22 +125,6 @@ const VendorReviewsPage = () => {
     fetchReviews();
     fetchMenuItems();
   }, [id, fetchVendor, fetchReviews, fetchMenuItems]);
-
-  useEffect(() => {
-    if (user && id) {
-      checkExistingReview();
-    }
-  }, [user, id, checkExistingReview]);
-
-  // Re-check existing review when menu item changes
-  useEffect(() => {
-    if (user && id && selectedMenuItem) {
-      checkExistingReview();
-    } else if (user && id && !selectedMenuItem) {
-      // If menu item is cleared, check for vendor review
-      checkExistingReview();
-    }
-  }, [selectedMenuItem, user, id, checkExistingReview]);
 
   const applyFilters = useCallback(() => {
     let tempReviews = [...reviews];
@@ -220,18 +164,6 @@ const VendorReviewsPage = () => {
     applyFilters();
   }, [reviews, ratingFilter, sortBy, searchQuery, applyFilters]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    setShowProfileMenu(false);
-    navigate('/');
-  };
-
-  const handleProfile = () => {
-    setShowProfileMenu(false);
-    navigate('/profile');
-  };
-
   const averageRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : '0.0';
@@ -252,74 +184,7 @@ const VendorReviewsPage = () => {
 
   return (
     <div className="vendor-reviews-page">
-      {/* Header - matching LandingPage */}
-      <header className="header">
-        <div className="container">
-          <div className="logo" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
-            <div className="dukeeatz-brand">
-              <h1>DukeEatz</h1>
-              <p className="tagline">Your Duke Dining Guide</p>
-            </div>
-          </div>
-          <nav className="nav">
-            <button
-              className={`nav-btn ${location.pathname === '/home' ? 'active' : ''}`}
-              onClick={() => navigate('/home')}
-            >
-              HOME
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-vendors' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-vendors')}
-            >
-              BROWSE VENDORS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-menu-items' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-menu-items')}
-            >
-              BROWSE MENU ITEMS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/leave-review' ? 'active' : ''}`}
-              onClick={() => navigate('/leave-review')}
-            >
-              REVIEWS
-            </button>
-            {user ? (
-              <div className="profile-menu-container">
-                <button
-                  className="profile-btn"
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                >
-                  <span className="profile-icon">👤</span>
-                  <span className="profile-name">{user.name || user.username}</span>
-                  <span className="dropdown-arrow">▼</span>
-                </button>
-                {showProfileMenu && (
-                  <div className="profile-dropdown">
-                    <button className="dropdown-item" onClick={handleProfile}>
-                      My Profile
-                    </button>
-                    <button className="dropdown-item" onClick={handleLogout}>
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button className="nav-btn" onClick={() => navigate('/')}>
-                  Log In
-                </button>
-                <button className="nav-btn primary" onClick={() => navigate('/')}>
-                  Sign Up
-                </button>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <div className="vendor-reviews-content">
         <div className="container">
@@ -419,7 +284,7 @@ const VendorReviewsPage = () => {
                   className="submit-review-btn"
                   disabled={submitting}
                 >
-                  {submitting ? 'Submitting...' : existingReview ? 'Update Review' : 'Submit Review'}
+                  {submitting ? 'Submitting...' : 'Submit Review'}
                 </button>
               </form>
             </div>
@@ -481,6 +346,12 @@ const VendorReviewsPage = () => {
                       <span className="review-author">{review.user_name || 'Anonymous'}</span>
                       <span className="review-date">{new Date(review.created_at).toLocaleDateString()}</span>
                     </div>
+                    <div className="review-meta">
+                      <span className="review-vendor">Vendor: {review.vendor_name || vendor.name}</span>
+                      <span className="review-item-label">
+                        {review.menu_item_name ? `Item: ${review.menu_item_name}` : 'General vendor review'}
+                      </span>
+                    </div>
                     <p className="review-comment">{review.comment}</p>
                   </div>
                 ))}
@@ -490,11 +361,7 @@ const VendorReviewsPage = () => {
         </div>
       </div>
 
-      <footer className="footer">
-        <div className="container">
-          <p>&copy; 2024 DukeEatz. Built for the Duke community.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

@@ -207,7 +207,7 @@ INSERT INTO vendors (
 ),
 -- Additional East & Central Campus Locations
 (
-    'Café 300',
+    'Cafe 300',
     'Convenient café located at 300 Swift offering breakfast, lunch, and dinner options with mobile ordering available.',
     '{"phone": "919-660-3987"}',
     'east_central_campus',
@@ -355,7 +355,7 @@ INSERT INTO vendors (
     ARRAY[]::dietarytag[]
 ),
 (
-    'Sazón',
+    'Sazon',
     'Latin American restaurant featuring authentic flavors from across Latin America with fresh ingredients.',
     '{"phone": "919-660-3994"}',
     'west_campus',
@@ -1029,4 +1029,266 @@ INSERT INTO vendors (
     'middle_eastern',
     ARRAY['food_points', 'cash', 'credit_card']::paymentmethod[],
     ARRAY['vegetarian', 'vegan', 'halal', 'gluten_free']::dietarytag[]
+),
+(
+    'Sister Liu''s Kitchen',
+    'Authentic Chinese food truck specializing in handmade dumplings, Chinese burgers (Rou Jia Mo), and noodles.',
+    '{"phone": "919-000-0010", "website": "https://sisterliuskitchen.com"}',
+    'food_trucks',
+    'Mobile - Various Campus Locations',
+    'Food Truck',
+    'N/A',
+    '{
+        "monday": {"lunch": "11:00am-2:00pm"},
+        "tuesday": {"lunch": "11:00am-2:00pm"},
+        "wednesday": {"lunch": "11:00am-2:00pm"},
+        "thursday": {"lunch": "11:00am-2:00pm"},
+        "friday": {"lunch": "11:00am-2:00pm"},
+        "saturday": null,
+        "sunday": null
+    }',
+    'chinese',
+    ARRAY['food_points', 'cash', 'credit_card']::paymentmethod[],
+    ARRAY['vegetarian', 'vegan']::dietarytag[]
+),
+(
+    'Bon Fritay',
+    'Haitian food truck offering traditional Haitian street food including griot (fried pork), rice bowls, and plantains.',
+    '{"phone": "919-000-0011", "website": "https://bonfritaytruck.com"}',
+    'food_trucks',
+    'Mobile - Various Campus Locations',
+    'Food Truck',
+    'N/A',
+    '{
+        "monday": {"lunch": "11:00am-2:00pm"},
+        "tuesday": {"lunch": "11:00am-2:00pm"},
+        "wednesday": {"lunch": "11:00am-2:00pm"},
+        "thursday": {"lunch": "11:00am-2:00pm"},
+        "friday": {"lunch": "11:00am-2:00pm"},
+        "saturday": null,
+        "sunday": null
+    }',
+    'latin',
+    ARRAY['food_points', 'cash', 'credit_card']::paymentmethod[],
+    ARRAY['gluten_free']::dietarytag[]
+),
+
+-- =============================================
+-- OFF-CAMPUS VENDORS (Near Duke University)
+-- =============================================
+
+-- 9th Street District
+(
+    'Elmo''s Diner',
+    'Classic American diner popular with Duke students, known for breakfast and homestyle cooking since 1991.',
+    '{"phone": "919-416-3823", "website": "https://elmosdiner.com", "address": "776 9th St, Durham, NC 27705"}',
+    'off_campus',
+    '776 9th St, Durham, NC 27705',
+    'Restaurant',
+    'N/A',
+    '{
+        "monday": {"breakfast": "7:00am-2:30pm"},
+        "tuesday": {"breakfast": "7:00am-2:30pm"},
+        "wednesday": {"breakfast": "7:00am-2:30pm"},
+        "thursday": {"breakfast": "7:00am-2:30pm"},
+        "friday": {"breakfast": "7:00am-2:30pm"},
+        "saturday": {"breakfast": "8:00am-2:30pm"},
+        "sunday": {"breakfast": "8:00am-2:30pm"}
+    }',
+    'american',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY['vegetarian']::dietarytag[]
+),
+(
+    'Banh''s Cuisine',
+    'Authentic Vietnamese and Chinese restaurant on 9th Street, a Durham staple since 1990.',
+    '{"phone": "919-286-2888", "address": "750 9th St, Durham, NC 27705"}',
+    'off_campus',
+    '750 9th St, Durham, NC 27705',
+    'Restaurant',
+    'N/A',
+    '{
+        "monday": {"lunch": "11:00am-9:00pm"},
+        "tuesday": {"lunch": "11:00am-9:00pm"},
+        "wednesday": {"lunch": "11:00am-9:00pm"},
+        "thursday": {"lunch": "11:00am-9:00pm"},
+        "friday": {"lunch": "11:00am-9:30pm"},
+        "saturday": {"lunch": "11:00am-9:30pm"},
+        "sunday": {"lunch": "12:00pm-9:00pm"}
+    }',
+    'asian',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY['vegetarian', 'vegan', 'gluten_free']::dietarytag[]
+),
+(
+    'Kiichi Ramen',
+    'Japanese ramen and izakaya bar offering authentic ramen bowls and Japanese small plates.',
+    '{"phone": "984-377-3442", "website": "https://kiichiramenonline.com", "address": "730 9th St, Durham, NC 27705"}',
+    'off_campus',
+    '730 9th St, Durham, NC 27705',
+    'Restaurant',
+    'N/A',
+    '{
+        "monday": null,
+        "tuesday": {"lunch": "11:30am-2:30pm", "dinner": "5:00pm-9:00pm"},
+        "wednesday": {"lunch": "11:30am-2:30pm", "dinner": "5:00pm-9:00pm"},
+        "thursday": {"lunch": "11:30am-2:30pm", "dinner": "5:00pm-9:00pm"},
+        "friday": {"lunch": "11:30am-2:30pm", "dinner": "5:00pm-9:30pm"},
+        "saturday": {"lunch": "11:30am-2:30pm", "dinner": "5:00pm-9:30pm"},
+        "sunday": {"lunch": "11:30am-2:30pm", "dinner": "5:00pm-9:00pm"}
+    }',
+    'japanese',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY['vegetarian', 'vegan']::dietarytag[]
+),
+(
+    'Monuts',
+    'Popular cafe known for homemade donuts, breakfast sandwiches, and baked goods.',
+    '{"phone": "919-286-2642", "website": "https://monutsdonuts.com", "address": "1002 9th St, Durham, NC 27705"}',
+    'off_campus',
+    '1002 9th St, Durham, NC 27705',
+    'Cafe',
+    'N/A',
+    '{
+        "monday": {"breakfast": "7:00am-2:00pm"},
+        "tuesday": {"breakfast": "7:00am-2:00pm"},
+        "wednesday": {"breakfast": "7:00am-2:00pm"},
+        "thursday": {"breakfast": "7:00am-2:00pm"},
+        "friday": {"breakfast": "7:00am-2:00pm"},
+        "saturday": {"breakfast": "8:00am-2:00pm"},
+        "sunday": {"breakfast": "8:00am-2:00pm"}
+    }',
+    'american',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY['vegetarian']::dietarytag[]
+),
+(
+    'Panera Bread - 9th Street',
+    'Fast-casual bakery-cafe chain serving soups, salads, sandwiches, and fresh-baked bread.',
+    '{"phone": "919-286-5556", "website": "https://panerabread.com", "address": "737 9th St, Durham, NC 27705"}',
+    'off_campus',
+    '737 9th St, Durham, NC 27705',
+    'Restaurant',
+    'N/A',
+    '{
+        "monday": {"all_day": "6:30am-9:00pm"},
+        "tuesday": {"all_day": "6:30am-9:00pm"},
+        "wednesday": {"all_day": "6:30am-9:00pm"},
+        "thursday": {"all_day": "6:30am-9:00pm"},
+        "friday": {"all_day": "6:30am-9:00pm"},
+        "saturday": {"all_day": "7:00am-9:00pm"},
+        "sunday": {"all_day": "7:00am-8:00pm"}
+    }',
+    'american',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY['vegetarian', 'vegan']::dietarytag[]
+),
+
+-- Brightleaf Square / Downtown Durham
+(
+    'Toast',
+    'Popular Italian sandwich shop known for paninis, tramezzini, and artisan sandwiches.',
+    '{"phone": "919-683-2183", "website": "https://toast-fivepoints.com", "address": "345 W Main St, Durham, NC 27701"}',
+    'off_campus',
+    '345 W Main St, Durham, NC 27701',
+    'Restaurant',
+    'N/A',
+    '{
+        "monday": {"lunch": "11:00am-2:45pm"},
+        "tuesday": {"lunch": "11:00am-2:45pm"},
+        "wednesday": {"lunch": "11:00am-2:45pm"},
+        "thursday": {"lunch": "11:00am-2:45pm"},
+        "friday": {"lunch": "11:00am-2:45pm"},
+        "saturday": {"lunch": "11:30am-2:45pm"},
+        "sunday": null
+    }',
+    'italian',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY['vegetarian']::dietarytag[]
+),
+(
+    'Zweli''s',
+    'Zimbabwean restaurant offering South African cuisine including peri peri chicken and African-inspired dishes.',
+    '{"phone": "919-251-9555", "website": "https://zwelis.com", "address": "905 W Main St, Durham, NC 27701"}',
+    'off_campus',
+    '905 W Main St, Durham, NC 27701',
+    'Restaurant',
+    'N/A',
+    '{
+        "monday": null,
+        "tuesday": {"lunch": "11:00am-3:00pm", "dinner": "5:00pm-9:00pm"},
+        "wednesday": {"lunch": "11:00am-3:00pm", "dinner": "5:00pm-9:00pm"},
+        "thursday": {"lunch": "11:00am-3:00pm", "dinner": "5:00pm-9:00pm"},
+        "friday": {"lunch": "11:00am-3:00pm", "dinner": "5:00pm-10:00pm"},
+        "saturday": {"lunch": "11:00am-3:00pm", "dinner": "5:00pm-10:00pm"},
+        "sunday": {"brunch": "11:00am-3:00pm"}
+    }',
+    'middle_eastern',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY['vegetarian', 'gluten_free', 'halal']::dietarytag[]
+),
+
+-- Chain Restaurants Near Duke
+(
+    'Chipotle - Erwin Road',
+    'Fast-casual Mexican restaurant known for customizable burritos, bowls, tacos, and salads.',
+    '{"phone": "919-383-7887", "website": "https://chipotle.com", "address": "2608 Erwin Rd, Durham, NC 27705"}',
+    'off_campus',
+    '2608 Erwin Rd, Durham, NC 27705',
+    'Restaurant',
+    'N/A',
+    '{
+        "monday": {"all_day": "10:45am-10:00pm"},
+        "tuesday": {"all_day": "10:45am-10:00pm"},
+        "wednesday": {"all_day": "10:45am-10:00pm"},
+        "thursday": {"all_day": "10:45am-10:00pm"},
+        "friday": {"all_day": "10:45am-10:00pm"},
+        "saturday": {"all_day": "10:45am-10:00pm"},
+        "sunday": {"all_day": "10:45am-10:00pm"}
+    }',
+    'mexican',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY['vegetarian', 'vegan', 'gluten_free']::dietarytag[]
+),
+(
+    'Chick-fil-A - Hillsborough Road',
+    'Popular fast food chain specializing in chicken sandwiches and nuggets.',
+    '{"phone": "919-383-8420", "website": "https://chick-fil-a.com", "address": "3429 Hillsborough Rd, Durham, NC 27705"}',
+    'off_campus',
+    '3429 Hillsborough Rd, Durham, NC 27705',
+    'Restaurant',
+    'N/A',
+    '{
+        "monday": {"all_day": "6:30am-10:00pm"},
+        "tuesday": {"all_day": "6:30am-10:00pm"},
+        "wednesday": {"all_day": "6:30am-10:00pm"},
+        "thursday": {"all_day": "6:30am-10:00pm"},
+        "friday": {"all_day": "6:30am-10:00pm"},
+        "saturday": {"all_day": "6:30am-10:00pm"},
+        "sunday": null
+    }',
+    'american',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY[]::dietarytag[]
+),
+(
+    'Cookout',
+    'Budget-friendly fast food chain popular with Duke students for burgers, BBQ, and milkshakes.',
+    '{"phone": "919-286-7297", "address": "2501 Hillsborough Rd, Durham, NC 27705"}',
+    'off_campus',
+    '2501 Hillsborough Rd, Durham, NC 27705',
+    'Restaurant',
+    'N/A',
+    '{
+        "monday": {"all_day": "10:30am-3:00am"},
+        "tuesday": {"all_day": "10:30am-3:00am"},
+        "wednesday": {"all_day": "10:30am-3:00am"},
+        "thursday": {"all_day": "10:30am-3:00am"},
+        "friday": {"all_day": "10:30am-4:00am"},
+        "saturday": {"all_day": "10:30am-4:00am"},
+        "sunday": {"all_day": "10:30am-3:00am"}
+    }',
+    'american',
+    ARRAY['cash', 'credit_card']::paymentmethod[],
+    ARRAY[]::dietarytag[]
 );

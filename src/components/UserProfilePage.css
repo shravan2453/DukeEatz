@@ -6,7 +6,7 @@
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #001A57 0%, #2c5282 100%);
+  background: linear-gradient(135deg, #001A57 0%, #2c5282 50%, #000d2e 100%);
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -533,6 +533,7 @@
   padding: 1.5rem;
   border-radius: 8px;
   border-left: 4px solid #2c5282;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .review-card-header {
@@ -557,6 +558,118 @@
 
 .review-rating {
   font-size: 1.2rem;
+}
+
+.delete-review-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-review-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  padding: 1.75rem;
+  border-radius: 12px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  text-align: left;
+}
+
+.modal h3 {
+  margin: 0 0 0.75rem;
+  color: #001A57;
+}
+
+.modal p {
+  margin: 0 0 1.25rem;
+  color: #4a5568;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.modal-cancel-btn,
+.modal-delete-btn {
+  border: none;
+  padding: 0.55rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-cancel-btn {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+.modal-cancel-btn:hover {
+  background: #d1d5db;
+}
+
+.modal-delete-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.modal-delete-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.review-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.review-meta-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.review-label {
+  font-weight: 700;
+  color: #001A57;
+  font-size: 0.9rem;
+}
+
+.review-value {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 0.9rem;
 }
 
 .review-comment {

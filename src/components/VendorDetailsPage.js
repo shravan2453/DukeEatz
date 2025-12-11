@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { formatText } from '../utils/formatText';
+import { isVendorOpen } from '../utils/isVendorOpen';
 import './VendorDetailsPage.css';
+import Header from './Header';
+import Footer from './Footer';
 
 const API_URL = 'http://127.0.0.1:5001';
 
 const VendorDetailsPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams();
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,6 @@ const VendorDetailsPage = () => {
   const [reviews, setReviews] = useState([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [trendingItems, setTrendingItems] = useState([]);
 
   const fetchVendor = useCallback(async () => {
@@ -137,18 +138,6 @@ const VendorDetailsPage = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    setShowProfileMenu(false);
-    navigate('/');
-  };
-
-  const handleProfile = () => {
-    setShowProfileMenu(false);
-    navigate('/profile');
-  };
-
   const averageRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : '0.0';
@@ -163,74 +152,7 @@ const VendorDetailsPage = () => {
 
   return (
     <div className="vendor-details-page">
-      {/* Header - matching LandingPage */}
-      <header className="header">
-        <div className="container">
-          <div className="logo" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
-            <div className="dukeeatz-brand">
-              <h1>DukeEatz</h1>
-              <p className="tagline">Your Duke Dining Guide</p>
-            </div>
-          </div>
-          <nav className="nav">
-            <button 
-              className={`nav-btn ${location.pathname === '/home' ? 'active' : ''}`}
-              onClick={() => navigate('/home')}
-            >
-              HOME
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-vendors' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-vendors')}
-            >
-              BROWSE VENDORS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-menu-items' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-menu-items')}
-            >
-              BROWSE MENU ITEMS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/leave-review' ? 'active' : ''}`}
-              onClick={() => navigate('/leave-review')}
-            >
-              REVIEWS
-            </button>
-            {user ? (
-              <div className="profile-menu-container">
-                <button 
-                  className="profile-btn"
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                >
-                  <span className="profile-icon">👤</span>
-                  <span className="profile-name">{user.name || user.username}</span>
-                  <span className="dropdown-arrow">▼</span>
-                </button>
-                {showProfileMenu && (
-                  <div className="profile-dropdown">
-                    <button className="dropdown-item" onClick={handleProfile}>
-                      My Profile
-                    </button>
-                    <button className="dropdown-item" onClick={handleLogout}>
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button className="nav-btn" onClick={() => navigate('/')}>
-                  Log In
-                </button>
-                <button className="nav-btn primary" onClick={() => navigate('/')}>
-                  Sign Up
-                </button>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <div className="vendor-details-content">
         <div className="container">
@@ -243,7 +165,12 @@ const VendorDetailsPage = () => {
             )}
           </div>
           <div className="vendor-header">
-            <h1>{vendor.name}</h1>
+            <div className="vendor-title-row">
+              <h1>{vendor.name}</h1>
+              <span className={`status-tag ${isVendorOpen(vendor.operating_hours) ? 'status-open' : 'status-closed'}`}>
+                {isVendorOpen(vendor.operating_hours) ? 'Open' : 'Closed'}
+              </span>
+            </div>
             <div className="vendor-meta">
               <span className="cuisine-badge">{formatText(vendor.cuisine)}</span>
               <span className="location-badge">{formatText(vendor.location)}</span>
@@ -400,6 +327,18 @@ const VendorDetailsPage = () => {
                           <span className="review-author">{review.user_name || 'Anonymous'}</span>
                           <span className="review-date">{new Date(review.created_at).toLocaleDateString()}</span>
                         </div>
+                        <div className="review-meta">
+                          <div className="review-meta-line">
+                            <span className="review-label">Vendor:</span>
+                            <span className="review-value">{review.vendor_name || vendor.name}</span>
+                          </div>
+                          <div className="review-meta-line">
+                            <span className="review-label">Item:</span>
+                            <span className="review-value">
+                              {review.menu_item_name ? review.menu_item_name : 'General vendor review'}
+                            </span>
+                          </div>
+                        </div>
                         <p className="review-comment">{review.comment}</p>
                       </div>
                     ))
@@ -411,12 +350,7 @@ const VendorDetailsPage = () => {
         </div>
       </div>
       
-      {/* Footer - matching LandingPage */}
-      <footer className="footer">
-        <div className="container">
-          <p>&copy; 2024 DukeEatz. Built for the Duke community.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

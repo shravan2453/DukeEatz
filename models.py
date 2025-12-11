@@ -185,6 +185,7 @@ class Review(db.Model):
             'vendor_id': self.vendor_id,
             'menu_item_id': self.menu_item_id,
             'menu_item_name': self.menu_item.name if self.menu_item else None,
+            'vendor_name': self.vendor.name if self.vendor else None,
             'rating': self.rating,
             'comment': self.comment,
             'created_at': self.created_at.isoformat() if self.created_at else None,

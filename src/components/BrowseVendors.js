@@ -1,89 +1,211 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Fuse from 'fuse.js';
 import { formatText } from '../utils/formatText';
+import { isVendorOpen } from '../utils/isVendorOpen';
 import './BrowseVendors.css';
+import Header from './Header';
+import Footer from './Footer';
 
 const API_URL = 'http://127.0.0.1:5001';
 
 const BrowseVendors = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedCuisine, setSelectedCuisine] = useState('all');
-  const [selectedPayment, setSelectedPayment] = useState('all');
-  const [selectedDietary, setSelectedDietary] = useState('all');
+  const [selectedCategories, setSelectedCategories] = useState([]); // Multi-select
+  const [selectedCuisines, setSelectedCuisines] = useState([]); // Multi-select
+  const [selectedPayments, setSelectedPayments] = useState([]); // Multi-select
+  const [selectedDietaries, setSelectedDietaries] = useState([]); // Multi-select
+  const [showOpenOnly, setShowOpenOnly] = useState(false);
   const [sortBy, setSortBy] = useState('name_asc');
-  const [activeFilterType, setActiveFilterType] = useState('location'); // 'location', 'cuisine', 'payment', 'dietary'
+  const [activeFilterTypes, setActiveFilterTypes] = useState({
+    location: true,
+    cuisine: false,
+    payment: false,
+    dietary: false
+  }); // Multiple filter types can be active at once
   const [vendors, setVendors] = useState([]);
+  const [allVendors, setAllVendors] = useState([]); // Store all vendors for fuzzy search
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
+  // Apply filters function
+  const applyFilters = useCallback((vendorsToFilter) => {
+    let filtered = [...vendorsToFilter];
+    
+    // Apply multi-select filters
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(v => selectedCategories.includes(v.location));
     }
-  }, []);
+    if (selectedCuisines.length > 0) {
+      filtered = filtered.filter(v => selectedCuisines.includes(v.cuisine));
+    }
+    if (selectedPayments.length > 0) {
+      filtered = filtered.filter(v => 
+        v.payment_methods && selectedPayments.some(pm => v.payment_methods.includes(pm))
+      );
+    }
+    if (selectedDietaries.length > 0) {
+      filtered = filtered.filter(v => 
+        v.dietary_tags && selectedDietaries.some(dt => v.dietary_tags.includes(dt))
+      );
+    }
+    
+    // Apply sorting
+    if (sortBy === 'rating_desc') {
+      filtered.sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0));
+    } else if (sortBy === 'rating_asc') {
+      filtered.sort((a, b) => (a.avg_rating || 0) - (b.avg_rating || 0));
+    } else if (sortBy === 'name_asc') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'name_desc') {
+      filtered.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sortBy === 'location_asc') {
+      filtered.sort((a, b) => (a.location || '').localeCompare(b.location || ''));
+    } else if (sortBy === 'location_desc') {
+      filtered.sort((a, b) => (b.location || '').localeCompare(a.location || ''));
+    }
+    
+    return filtered;
+  }, [selectedCategories, selectedCuisines, selectedPayments, selectedDietaries, sortBy]);
 
   // Fetch vendors from backend
-  useEffect(() => {
-    const fetchVendors = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Build query parameters
-        const params = new URLSearchParams();
-        if (searchQuery) params.append('q', searchQuery);
-        if (selectedCategory !== 'all') params.append('location', selectedCategory);
-        if (selectedCuisine !== 'all') params.append('cuisine', selectedCuisine);
-        if (selectedPayment !== 'all') params.append('payment_method', selectedPayment);
-        if (selectedDietary !== 'all') params.append('dietary_tag', selectedDietary);
-        params.append('sort_by', sortBy);
-        
-        const url = `${API_URL}/api/vendors${params.toString() ? `?${params.toString()}` : ''}`;
-        
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setVendors(data);
-      } catch (err) {
-        console.error("Error fetching vendors:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const fetchVendors = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Build query parameters
+      // Don't send search query to backend - we'll use fuzzy search on frontend
+      // For multi-select, we'll filter on frontend after fetching
+      const params = new URLSearchParams();
+      params.append('sort_by', sortBy);
+      
+      const url = `${API_URL}/api/vendors${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
+      const data = await response.json();
+      setAllVendors(data); // Store all vendors
+      // Don't set vendors here - let the useEffect handle filtering
+    } catch (err) {
+      console.error("Error fetching vendors:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [sortBy]);
 
+  // Fetch vendors on load and when sort changes
+  useEffect(() => {
     fetchVendors();
-  }, [selectedCategory, selectedCuisine, selectedPayment, selectedDietary, searchQuery, sortBy]);
+  }, [fetchVendors]);
 
-  // Handle category filter change
-  const handleCategoryChange = (category) => {
-    setSelectedCategory(category);
-    // The useEffect will handle the refetch
+  // Re-apply filters when data, filters, or search change
+  useEffect(() => {
+    if (allVendors.length === 0) return;
+
+    let filteredVendors = allVendors;
+
+    if (searchQuery) {
+      const fuseOptions = {
+        keys: [
+          { name: 'name', weight: 0.7 },
+          { name: 'description', weight: 0.3 },
+          { name: 'location', weight: 0.2 },
+          { name: 'cuisine', weight: 0.2 }
+        ],
+        threshold: 0.4,
+        includeScore: true,
+        minMatchCharLength: 2
+      };
+      const fuse = new Fuse(allVendors, fuseOptions);
+      const results = fuse.search(searchQuery);
+      filteredVendors = results.map(result => result.item);
+    }
+
+    const finalFiltered = applyFilters(filteredVendors);
+    setVendors(finalFiltered);
+  }, [allVendors, searchQuery, selectedCategories, selectedCuisines, selectedPayments, selectedDietaries, applyFilters]);
+
+  // Fuzzy search using Fuse.js when search query is provided
+  useEffect(() => {
+    if (allVendors.length === 0) {
+      return;
+    }
+
+    let filteredVendors = allVendors;
+
+    // Apply fuzzy search if there's a search query
+    if (searchQuery) {
+      const fuseOptions = {
+        keys: [
+          { name: 'name', weight: 0.7 },
+          { name: 'description', weight: 0.3 },
+          { name: 'location', weight: 0.2 },
+          { name: 'cuisine', weight: 0.2 }
+        ],
+        threshold: 0.4,
+        includeScore: true,
+        minMatchCharLength: 2
+      };
+
+      const fuse = new Fuse(allVendors, fuseOptions);
+      const results = fuse.search(searchQuery);
+      filteredVendors = results.map(result => result.item);
+    }
+    
+    // Always apply filters (whether or not there's a search query)
+    const finalFiltered = applyFilters(filteredVendors);
+    setVendors(finalFiltered);
+  }, [searchQuery, allVendors, applyFilters]);
+
+  // Toggle functions for multi-select
+  const toggleCategory = (category) => {
+    setSelectedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const toggleCuisine = (cuisine) => {
+    setSelectedCuisines(prev => 
+      prev.includes(cuisine) 
+        ? prev.filter(c => c !== cuisine)
+        : [...prev, cuisine]
+    );
+  };
+
+  const togglePayment = (payment) => {
+    setSelectedPayments(prev => 
+      prev.includes(payment) 
+        ? prev.filter(p => p !== payment)
+        : [...prev, payment]
+    );
+  };
+
+  const toggleDietary = (dietary) => {
+    setSelectedDietaries(prev => 
+      prev.includes(dietary) 
+        ? prev.filter(d => d !== dietary)
+        : [...prev, dietary]
+    );
+  };
+
+  // Toggle filter type visibility
+  const toggleFilterType = (filterType) => {
+    setActiveFilterTypes(prev => ({
+      ...prev,
+      [filterType]: !prev[filterType]
+    }));
   };
 
   // Handle sort change
   const handleSortChange = (e) => {
     setSortBy(e.target.value);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    setShowProfileMenu(false);
-    navigate('/');
-  };
-
-  const handleProfile = () => {
-    setShowProfileMenu(false);
-    navigate('/profile');
   };
 
   // Render vendor cards
@@ -96,15 +218,22 @@ const BrowseVendors = () => {
       return <div className="error">Error: {error}</div>;
     }
 
-    if (vendors.length === 0) {
+    // Filter vendors by open status if filter is enabled
+    const filteredVendors = showOpenOnly 
+      ? vendors.filter(vendor => isVendorOpen(vendor.operating_hours))
+      : vendors;
+
+    if (filteredVendors.length === 0) {
       return (
         <div className="empty-state">
           <div className="empty-state-icon">🍽️</div>
           <h3 className="empty-state-title">No vendors found</h3>
           <p className="empty-state-description">
-            {selectedCategory === 'all' 
-              ? "No vendors are currently available." 
-              : `No vendors found in ${formatText(selectedCategory)}.`}
+            {showOpenOnly 
+              ? "No vendors are currently open. Try removing the 'Open Now' filter to see all vendors."
+              : (selectedCategories.length === 0 && selectedCuisines.length === 0 && selectedPayments.length === 0 && selectedDietaries.length === 0)
+                ? "No vendors are currently available." 
+                : "No vendors match your current filters. Try adjusting your filter selections."}
           </p>
         </div>
       );
@@ -112,113 +241,67 @@ const BrowseVendors = () => {
 
     return (
       <div className="vendors-grid">
-        {vendors.map((vendor) => (
-          <div key={vendor.id} className="vendor-card" onClick={() => navigate(`/vendor/${vendor.id}`)}>
-            <div className="vendor-image">
-              {/* Add vendor image if available */}
-              <div className="vendor-image-placeholder">
-                {vendor.name.charAt(0)}
+        {filteredVendors.map((vendor) => {
+          const open = isVendorOpen(vendor.operating_hours);
+          return (
+            <div key={vendor.id} className="vendor-card" onClick={() => navigate(`/vendor/${vendor.id}`)}>
+              <div className="vendor-image">
+                {/* Add vendor image if available */}
+                <div className="vendor-image-placeholder">
+                  {vendor.name.charAt(0)}
+                </div>
               </div>
-            </div>
-            <div className="vendor-info">
-              <h3>{vendor.name}</h3>
-              <p className="vendor-description">{vendor.description}</p>
-              <div className="vendor-tags-container">
-                <div className="vendor-tags-row">
-                  <span className="tag-label">Location:</span>
-                  <span className="tag location">{formatText(vendor.location)}</span>
+              <div className="vendor-info">
+                <div className="vendor-header-with-status">
+                  <h3>{vendor.name}</h3>
+                  <span className={`status-tag ${open ? 'status-open' : 'status-closed'}`}>
+                    {open ? 'Open' : 'Closed'}
+                  </span>
                 </div>
-                <div className="vendor-tags-row">
-                  <span className="tag-label">Cuisine:</span>
-                  <span className="tag cuisine">{formatText(vendor.cuisine)}</span>
+                <p className="vendor-description">{vendor.description}</p>
+                <div className="vendor-rating-display">
+                  {vendor.avg_rating && vendor.avg_rating > 0 ? (
+                    <>
+                      <span className="vendor-rating-stars">
+                        {'⭐'.repeat(Math.round(vendor.avg_rating))}
+                      </span>
+                      <span className="vendor-rating-value">{vendor.avg_rating.toFixed(1)}</span>
+                    </>
+                  ) : (
+                    <span className="vendor-rating-none">No rating yet</span>
+                  )}
                 </div>
-                {vendor.dietary_tags && vendor.dietary_tags.length > 0 && (
+                <div className="vendor-tags-container">
                   <div className="vendor-tags-row">
-                    <span className="tag-label">Dietary:</span>
-                    <div className="dietary-tags-group">
-                      {vendor.dietary_tags.map((tag, index) => (
-                        <span key={index} className="dietary-tag">{formatText(tag)}</span>
-                      ))}
-                    </div>
+                    <span className="tag-label">Location:</span>
+                    <span className="tag location">{formatText(vendor.location)}</span>
                   </div>
-                )}
+                  <div className="vendor-tags-row">
+                    <span className="tag-label">Cuisine:</span>
+                    <span className="tag cuisine">{formatText(vendor.cuisine)}</span>
+                  </div>
+                  {vendor.dietary_tags && vendor.dietary_tags.length > 0 && (
+                    <div className="vendor-tags-row">
+                      <span className="tag-label">Dietary:</span>
+                      <div className="dietary-tags-group">
+                        {vendor.dietary_tags.map((tag, index) => (
+                          <span key={index} className="dietary-tag">{formatText(tag)}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
 
   return (
     <div className="browse-vendors">
-      {/* Header - matching LandingPage */}
-      <header className="header">
-        <div className="container">
-          <div className="logo" onClick={() => navigate('/home')} style={{ cursor: 'pointer' }}>
-            <div className="dukeeatz-brand">
-              <h1>DukeEatz</h1>
-              <p className="tagline">Your Duke Dining Guide</p>
-            </div>
-          </div>
-          <nav className="nav">
-            <button 
-              className={`nav-btn ${location.pathname === '/home' ? 'active' : ''}`}
-              onClick={() => navigate('/home')}
-            >
-              HOME
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-vendors' ? 'active' : ''}`}
-            >
-              BROWSE VENDORS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/browse-menu-items' ? 'active' : ''}`}
-              onClick={() => navigate('/browse-menu-items')}
-            >
-              BROWSE MENU ITEMS
-            </button>
-            <button 
-              className={`nav-btn ${location.pathname === '/leave-review' ? 'active' : ''}`}
-              onClick={() => navigate('/leave-review')}
-            >
-              REVIEWS
-            </button>
-            {user ? (
-              <div className="profile-menu-container">
-                <button 
-                  className="profile-btn"
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                >
-                  <span className="profile-icon">👤</span>
-                  <span className="profile-name">{user.name || user.username}</span>
-                  <span className="dropdown-arrow">▼</span>
-                </button>
-                {showProfileMenu && (
-                  <div className="profile-dropdown">
-                    <button className="dropdown-item" onClick={handleProfile}>
-                      My Profile
-                    </button>
-                    <button className="dropdown-item" onClick={handleLogout}>
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button className="nav-btn" onClick={() => navigate('/')}>
-                  Log In
-                </button>
-                <button className="nav-btn primary" onClick={() => navigate('/')}>
-                  Sign Up
-                </button>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content - Single Block */}
       <section className="main-content-section">
@@ -249,28 +332,51 @@ const BrowseVendors = () => {
 
             {/* Filters Section */}
             <div className="filters-content">
-              {/* Filter Type Dropdown */}
+              {/* Filter Type Checkboxes */}
               <div className="filter-section">
-                <h3 className="filter-title">Filter by</h3>
-                <select 
-                  className="filter-type-select"
-                  value={activeFilterType}
-                  onChange={(e) => setActiveFilterType(e.target.value)}
-                >
-                  <option value="location">Location</option>
-                  <option value="cuisine">Cuisine Type</option>
-                  <option value="payment">Payment Method</option>
-                  <option value="dietary">Dietary Options</option>
-                </select>
+                <h3 className="filter-title">Enable Filter Types</h3>
+                <div className="filter-type-checkboxes">
+                  <label className="filter-type-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={activeFilterTypes.location}
+                      onChange={() => toggleFilterType('location')}
+                    />
+                    <span>Location</span>
+                  </label>
+                  <label className="filter-type-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={activeFilterTypes.cuisine}
+                      onChange={() => toggleFilterType('cuisine')}
+                    />
+                    <span>Cuisine Type</span>
+                  </label>
+                  <label className="filter-type-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={activeFilterTypes.payment}
+                      onChange={() => toggleFilterType('payment')}
+                    />
+                    <span>Payment Method</span>
+                  </label>
+                  <label className="filter-type-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={activeFilterTypes.dietary}
+                      onChange={() => toggleFilterType('dietary')}
+                    />
+                    <span>Dietary Options</span>
+                  </label>
+                </div>
               </div>
 
-              {/* Dynamic Filter Options Based on Selection */}
-              {activeFilterType === 'location' && (
+              {/* Show all enabled filter types simultaneously */}
+              {activeFilterTypes.location && (
                 <div className="filter-section">
-                  <h3 className="filter-title">Select Location</h3>
+                  <h3 className="filter-title">Select Locations (Multi-select)</h3>
                   <div className="location-filters">
                     {[
-                      { id: 'all', name: 'All Locations' },
                       { id: 'east_central_campus', name: 'East/Central' },
                       { id: 'west_campus', name: 'West Campus' },
                       { id: 'merchants_on_points', name: 'Merchants on Points' },
@@ -279,22 +385,29 @@ const BrowseVendors = () => {
                     ].map(({ id, name }) => (
                       <button
                         key={id}
-                        className={`location-filter-btn ${selectedCategory === id ? 'active' : ''}`}
-                        onClick={() => handleCategoryChange(id)}
+                        className={`location-filter-btn ${selectedCategories.includes(id) ? 'active' : ''}`}
+                        onClick={() => toggleCategory(id)}
                       >
                         {name}
                       </button>
                     ))}
                   </div>
+                  {selectedCategories.length > 0 && (
+                    <button 
+                      className="clear-filters-btn"
+                      onClick={() => setSelectedCategories([])}
+                    >
+                      Clear Location Filters
+                    </button>
+                  )}
                 </div>
               )}
 
-              {activeFilterType === 'cuisine' && (
+              {activeFilterTypes.cuisine && (
                 <div className="filter-section">
-                  <h3 className="filter-title">Select Cuisine</h3>
+                  <h3 className="filter-title">Select Cuisines (Multi-select)</h3>
                   <div className="location-filters">
                     {[
-                      { id: 'all', name: 'All Cuisines' },
                       { id: 'american', name: 'American' },
                       { id: 'asian', name: 'Asian' },
                       { id: 'mexican', name: 'Mexican' },
@@ -314,22 +427,29 @@ const BrowseVendors = () => {
                     ].map(({ id, name }) => (
                       <button
                         key={id}
-                        className={`location-filter-btn ${selectedCuisine === id ? 'active' : ''}`}
-                        onClick={() => setSelectedCuisine(id)}
+                        className={`location-filter-btn ${selectedCuisines.includes(id) ? 'active' : ''}`}
+                        onClick={() => toggleCuisine(id)}
                       >
                         {name}
                       </button>
                     ))}
                   </div>
+                  {selectedCuisines.length > 0 && (
+                    <button 
+                      className="clear-filters-btn"
+                      onClick={() => setSelectedCuisines([])}
+                    >
+                      Clear Cuisine Filters
+                    </button>
+                  )}
                 </div>
               )}
 
-              {activeFilterType === 'payment' && (
+              {activeFilterTypes.payment && (
                 <div className="filter-section">
-                  <h3 className="filter-title">Select Payment Method</h3>
+                  <h3 className="filter-title">Select Payment Methods (Multi-select)</h3>
                   <div className="location-filters">
                     {[
-                      { id: 'all', name: 'All Payment Methods' },
                       { id: 'food_points', name: 'Food Points' },
                       { id: 'duke_card', name: 'Duke Card' },
                       { id: 'credit_card', name: 'Credit Card' },
@@ -341,22 +461,29 @@ const BrowseVendors = () => {
                     ].map(({ id, name }) => (
                       <button
                         key={id}
-                        className={`location-filter-btn ${selectedPayment === id ? 'active' : ''}`}
-                        onClick={() => setSelectedPayment(id)}
+                        className={`location-filter-btn ${selectedPayments.includes(id) ? 'active' : ''}`}
+                        onClick={() => togglePayment(id)}
                       >
                         {name}
                       </button>
                     ))}
                   </div>
+                  {selectedPayments.length > 0 && (
+                    <button 
+                      className="clear-filters-btn"
+                      onClick={() => setSelectedPayments([])}
+                    >
+                      Clear Payment Filters
+                    </button>
+                  )}
                 </div>
               )}
 
-              {activeFilterType === 'dietary' && (
+              {activeFilterTypes.dietary && (
                 <div className="filter-section">
-                  <h3 className="filter-title">Select Dietary Option</h3>
+                  <h3 className="filter-title">Select Dietary Options (Multi-select)</h3>
                   <div className="location-filters">
                     {[
-                      { id: 'all', name: 'All Dietary Options' },
                       { id: 'vegetarian', name: 'Vegetarian' },
                       { id: 'vegan', name: 'Vegan' },
                       { id: 'gluten_free', name: 'Gluten Free' },
@@ -370,15 +497,42 @@ const BrowseVendors = () => {
                     ].map(({ id, name }) => (
                       <button
                         key={id}
-                        className={`location-filter-btn ${selectedDietary === id ? 'active' : ''}`}
-                        onClick={() => setSelectedDietary(id)}
+                        className={`location-filter-btn ${selectedDietaries.includes(id) ? 'active' : ''}`}
+                        onClick={() => toggleDietary(id)}
                       >
                         {name}
                       </button>
                     ))}
                   </div>
+                  {selectedDietaries.length > 0 && (
+                    <button 
+                      className="clear-filters-btn"
+                      onClick={() => setSelectedDietaries([])}
+                    >
+                      Clear Dietary Filters
+                    </button>
+                  )}
                 </div>
               )}
+
+              {/* Open Now Filter */}
+              <div className="filter-section">
+                <h3 className="filter-title">Availability</h3>
+                <div className="location-filters">
+                  <button
+                    className={`location-filter-btn ${!showOpenOnly ? 'active' : ''}`}
+                    onClick={() => setShowOpenOnly(false)}
+                  >
+                    All Vendors
+                  </button>
+                  <button
+                    className={`location-filter-btn ${showOpenOnly ? 'active' : ''}`}
+                    onClick={() => setShowOpenOnly(true)}
+                  >
+                    Open Now
+                  </button>
+                </div>
+              </div>
 
               {/* Sort Controls */}
               <div className="sort-section">
@@ -390,6 +544,8 @@ const BrowseVendors = () => {
                 >
                   <option value="name_asc">Alphabetical (A-Z)</option>
                   <option value="name_desc">Alphabetical (Z-A)</option>
+                  <option value="rating_desc">Rating (High to Low)</option>
+                  <option value="rating_asc">Rating (Low to High)</option>
                   <option value="location_asc">Location (A-Z)</option>
                   <option value="location_desc">Location (Z-A)</option>
                 </select>
@@ -401,7 +557,19 @@ const BrowseVendors = () => {
               <div className="vendors-header">
                 <h3 className="vendors-title">Available Vendors</h3>
                 <div className="vendors-count-header">
-                  <span>{vendors.length} {vendors.length === 1 ? 'vendor' : 'vendors'} found</span>
+                  <span>
+                    {showOpenOnly 
+                      ? vendors.filter(v => isVendorOpen(v.operating_hours)).length 
+                      : vendors.length
+                    } {showOpenOnly 
+                      ? vendors.filter(v => isVendorOpen(v.operating_hours)).length === 1 
+                        ? 'vendor' 
+                        : 'vendors'
+                      : vendors.length === 1 
+                        ? 'vendor' 
+                        : 'vendors'
+                    } found
+                  </span>
                 </div>
               </div>
               {renderVendors()}
@@ -409,12 +577,7 @@ const BrowseVendors = () => {
           </div>
       </section>
 
-      {/* Footer - matching LandingPage */}
-      <footer className="footer">
-        <div className="container">
-          <p>&copy; 2024 DukeEatz. Built for the Duke community.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
