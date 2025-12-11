@@ -1,14 +1,22 @@
 # DukeEatz - Duke University Dining Guide
 
-A comprehensive dining guide for Duke University students, featuring vendor information, search functionality, and location-based filtering.
+A comprehensive dining guide for Duke University students. 
+
+## Final Video Demonstration
+
+**[Watch the full demo here](https://drive.google.com/file/d/13a-J9nvw5fHT5hNauBc1ZJbUUKp2-Fla/view?usp=sharing)**
 
 ## Features
 
-- **Browse Vendors**: View all dining options across Duke's campus
-- **Location Filtering**: Filter by East & Central Campus, West Campus, Merchants-On-Points, and Food Trucks
-- **Search Functionality**: Search vendors by name or description
-- **Detailed Information**: View operating hours, payment methods, dietary options, and locations
-- **Responsive Design**: Works on desktop and mobile devices
+- **User Authentication**: Secure registration and login with password hashing
+- **Browse Vendors**: View all dining options across Duke's campus with advanced filtering
+- **Search & Filters**: Filter by location, cuisine type, payment methods, and dietary tags
+- **Vendor Details**: View operating hours, contact info, menus, and customer reviews
+- **Menu Items**: Browse detailed menus with prices, nutrition info, and allergen data
+- **Review System**: Leave ratings and comments for vendors and specific menu items
+- **Favorites**: Save favorite vendors to your profile
+- **User Profiles**: Manage account info, view review history, and saved favorites
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
 
 ## Tech Stack
 
@@ -16,144 +24,190 @@ A comprehensive dining guide for Duke University students, featuring vendor info
 - React 18
 - React Router DOM
 - CSS3 with responsive design
+- LocalStorage for session management
 
 ### Backend
-- Node.js
-- Express.js
-- PostgreSQL
-- CORS enabled for cross-origin requests
+- Flask (Python)
+- Flask-CORS
+- Flask-SQLAlchemy (ORM)
+- Werkzeug (password hashing)
+- RESTful API design
 
-## Setup Instructions
+### Database
+- PostgreSQL
+- UUID primary keys
+- JSONB for flexible data (operating hours, contact info, nutrition)
+- ARRAY columns for payment methods and dietary tags
+- ENUM types for categories
+- pg_trgm extension for fuzzy search
+
+## Quick Start
+
+See **[SETUP.md](SETUP.md)** for detailed setup instructions and troubleshooting.
+
+```bash
+# 1. Create and load database
+psql postgres -c "CREATE DATABASE dukeeatz;"
+psql -d dukeeatz -f create.sql
+psql -d dukeeatz -f load.sql
+psql -d dukeeatz -f load_menu.sql
+
+# 2. Set up Python environment
+python3 -m venv dukeeatz
+source dukeeatz/bin/activate  # On Windows: dukeeatz\Scripts\activate
+pip install -r requirements.txt
+
+# 3. Create .env file with your database credentials
+echo "DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=dukeeatz" > .env
+
+# 4. Install frontend dependencies
+npm install
+
+# 5. Start the application
+npm run dev
+```
+
+Then open `http://localhost:3000` in your browser.
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- PostgreSQL (v12 or higher)
-- npm or yarn
-
-### Database Setup
-
-1. **Install PostgreSQL** and create a database:
-   ```sql
-   CREATE DATABASE dukeeatz;
-   ```
-
-2. **Run the schema** to create tables and sample data:
-   ```bash
-   psql -d dukeeatz -f schema.sql
-   ```
-
-3. **Create environment file** (copy from .env.example):
-   ```bash
-   cp .env.example .env
-   ```
-
-4. **Update .env** with your database credentials:
-   ```
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_NAME=dukeeatz
-   DB_USER=your_username
-   DB_PASSWORD=your_password
-   PORT=5001
-   ```
-
-### Installation
-
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-2. **Start the development server**:
-   ```bash
-   npm run dev
-   ```
-   This will start both the backend API server (port 5001) and React development server (port 3000).
-
-3. **Or start individually**:
-   ```bash
-   # Backend only
-   npm run server
-   
-   # Frontend only
-   npm start
-   ```
+- Python 3.8 or higher
+- PostgreSQL 12 or higher
+- Node.js 14 or higher
+- npm
 
 ## API Endpoints
 
+### Authentication
+- `POST /register` - Create new user account
+- `POST /login` - User login with email/password
+- `PUT /api/users/<user_id>` - Update user profile
+
 ### Vendors
-- `GET /api/vendors` - Get all vendors (with optional filters)
-- `GET /api/vendors/:id` - Get vendor by ID
-- `GET /api/vendors/location/:category` - Get vendors by location category
-- `GET /api/vendors/stats` - Get vendor statistics by location
+- `GET /api/vendors` - Get all vendors with optional filters
+  - Query params: `cuisine`, `location`, `payment_method`, `dietary_tag`, `q` (search), `sort_by`
 
-### Query Parameters
-- `location_category`: Filter by location (east_central_campus, west_campus, merchants_on_points, food_trucks, off_campus)
-- `cuisine_type`: Filter by cuisine type
-- `search`: Search in vendor names and descriptions
+### Menu Items
+- `GET /api/menu-items` - Get all menu items with filters
+- `GET /api/menu-items/vendor/<vendor_id>` - Get menu for specific vendor
+- `GET /api/menu-items/<menu_item_id>` - Get single menu item details
+- `GET /api/menu-items/vendor/<vendor_id>/trending` - Get top 3 trending items
+- `GET /api/menu-items/search` - Search menu items
 
-### Health Check
-- `GET /api/health` - API health status
+### Reviews
+- `POST /api/reviews` - Submit new review (requires user_id, vendor_id, rating 1-5)
+- `GET /api/reviews` - Get reviews with optional filters (vendor_id, user_id)
+- `GET /api/reviews/vendor/<vendor_id>` - Get all reviews for vendor
+- `GET /api/reviews/user/<user_id>` - Get all reviews by user
+- `PUT /api/reviews/<review_id>` - Update review
+- `DELETE /api/reviews/<review_id>` - Delete review (requires user_id authorization)
+
+### Favorites
+- `POST /api/favorites` - Add vendor to favorites (requires user_id, vendor_id)
+- `DELETE /api/favorites` - Remove from favorites
+- `GET /api/favorites/<user_id>` - Get user's favorite vendors
+- `GET /api/favorites/<user_id>/<vendor_id>` - Check if vendor is favorited
 
 ## Database Schema
 
-### Vendors Table
+### 5 Main Tables
+
+**vendors** - Dining locations
 - `vendor_id` (UUID, Primary Key)
-- `name` (VARCHAR) - Vendor name
-- `description` (TEXT) - Vendor description
+- `name`, `description`, `address`, `building_name`, `floor_level`
 - `contact_info` (JSONB) - Phone, email, website
-- `location_category` (ENUM) - Campus location category
-- `address` (VARCHAR) - Physical address
-- `building_name` (VARCHAR) - Campus building
-- `floor_level` (VARCHAR) - Floor/level information
 - `operating_hours` (JSONB) - Complex schedule data
-- `cuisine_type` (ENUM) - Type of cuisine
-- `payment_methods` (ARRAY) - Accepted payment methods
-- `dietary_tags` (ARRAY) - Dietary accommodations
-- `is_active` (BOOLEAN) - Active status
-- `is_verified` (BOOLEAN) - Admin verification status
-- `created_at` (TIMESTAMP) - Creation timestamp
-- `updated_at` (TIMESTAMP) - Last update timestamp
+- `location_category` (ENUM) - east_central_campus, west_campus, merchants_on_points, food_trucks, off_campus
+- `cuisine_type` (ENUM) - 23 cuisine types (american, italian, asian, etc.)
+- `payment_methods` (ARRAY of ENUM) - food_points, duke_card, credit_card, cash, etc.
+- `dietary_tags` (ARRAY of ENUM) - vegetarian, vegan, gluten_free, halal, kosher, etc.
+- `is_active`, `is_verified`, `created_at`, `updated_at`
 
-## Location Categories
+**users** - User accounts
+- `user_id` (UUID, Primary Key)
+- `name`, `username` (unique), `email` (unique)
+- `password_hash` - Hashed with Werkzeug
+- `created_at`, `updated_at`
 
-1. **East & Central Campus** - Main dining halls and campus eateries
-2. **West Campus** - West campus dining options
-3. **Merchants-On-Points** - Off-campus delivery vendors
-4. **Food Trucks** - Mobile food vendors
+**menu_items** - Food items for each vendor
+- `menu_item_id` (UUID, Primary Key)
+- `vendor_id` (Foreign Key → vendors)
+- `name`, `description`, `category`, `meal_type`, `price`
+- `nutritional_info` (JSONB) - Calories, protein, carbs, fat
+- `allergens` (JSONB) - Array of allergens
+- `dietary_tags` (ARRAY of ENUM)
+- `image_url`, `is_available`, `created_at`, `updated_at`
+
+**reviews** - User reviews for vendors/menu items
+- `review_id` (UUID, Primary Key)
+- `user_id` (Foreign Key → users)
+- `vendor_id` (Foreign Key → vendors)
+- `menu_item_id` (Foreign Key → menu_items, optional)
+- `rating` (INTEGER, 1-5), `comment` (TEXT)
+- `created_at`, `updated_at`
+
+**favorites** - User's saved vendors
+- `favorite_id` (UUID, Primary Key)
+- `user_id` (Foreign Key → users)
+- `vendor_id` (Foreign Key → vendors)
+- `created_at`
+
+### Key Features
+- **UUID Primary Keys** for all tables
+- **JSONB Columns** for flexible data (hours, contact, nutrition)
+- **ARRAY Columns** for multiple values (payment methods, dietary tags)
+- **ENUM Types** for data consistency
+- **Fuzzy Search** using PostgreSQL pg_trgm extension
+- **Foreign Key Constraints** with CASCADE/SET NULL
+
+## Project Structure
+
+```
+DukeEatz/
+├── app.py                 # Flask backend server
+├── models.py              # SQLAlchemy database models
+├── config.py              # Configuration settings
+├── requirements.txt       # Python dependencies
+├── create.sql             # Database schema
+├── load.sql               # Vendor data
+├── load_menu.sql          # Menu items data
+├── reload_database.sh     # Database reload script
+├── package.json           # Node.js dependencies
+├── .env                   # Environment variables (create this)
+├── src/                   # React frontend
+│   ├── App.js
+│   ├── components/
+│   │   ├── LandingPage.js
+│   │   ├── BrowseVendors.js
+│   │   ├── VendorDetailsPage.js
+│   │   ├── MenuItemsPage.js
+│   │   ├── ReviewsPage.js
+│   │   ├── UserProfilePage.js
+│   │   └── ...
+│   ├── utils/
+│   └── images/
+└── public/
+    └── index.html
+```
 
 ## Development
 
-### Project Structure
-```
-DukeEatz/
-├── src/
-│   ├── components/
-│   │   ├── LandingPage.js
-│   │   ├── LandingPage.css
-│   │   ├── BrowseVendors.js
-│   │   └── BrowseVendors.css
-│   ├── App.js
-│   └── index.js
-├── server.js
-├── schema.sql
-├── package.json
-└── README.md
-```
+### Backend (Flask)
+- **app.py** - Main Flask application with all API routes
+- **models.py** - SQLAlchemy ORM models for all 5 tables
+- **config.py** - Database configuration and settings
 
-### Adding New Vendors
+### Frontend (React)
+- **Components** - Modular React components for each page
+- **Routing** - React Router for navigation
+- **API Integration** - Fetch calls to Flask backend
 
-To add new vendors to the database, you can either:
-
-1. **Use the schema file** - Add INSERT statements to `schema.sql`
-2. **Direct SQL** - Insert directly into the vendors table
-3. **API Extension** - Add POST endpoints for vendor management
-
-### Customization
-
-- **Styling**: Modify CSS files in `src/components/`
-- **API Routes**: Extend `server.js` with new endpoints
-- **Database**: Modify `schema.sql` for schema changes
+### Database Management
+- Use `reload_database.sh` to reset and reload the database
+- Add vendors/menu items via SQL INSERT or build admin API endpoints
 
 ## Contributing
 
